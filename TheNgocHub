@@ -11,7 +11,7 @@ if CurrentID == VAGRANT_ID then
     -- =========================================================
     local Window = Rayfield:CreateWindow({
        Name = "VAGRANT SURVIVAL: The Ngoc Hub",
-       LoadingTitle = "Welcome DragonLTN",
+       LoadingTitle = "Thx For Using",
        LoadingSubtitle = "by DragonLTN",
        ConfigurationSaving = { Enabled = false }
     })
@@ -20,7 +20,7 @@ if CurrentID == VAGRANT_ID then
     _G.MasterESP = false
 
     EspTab:CreateToggle({
-       Name = "Full ESP Player",
+       Name = "ESP Player",
        CurrentValue = false,
        Callback = function(Value)
           _G.MasterESP = Value
@@ -84,7 +84,7 @@ if CurrentID == VAGRANT_ID then
     _G.HitboxEnabled = false
 
     CombatTab:CreateToggle({
-       Name = "Hitbox Đầu Đỏ",
+       Name = "Hitbox",
        CurrentValue = false,
        Callback = function(Value)
           _G.HitboxEnabled = Value
@@ -123,7 +123,7 @@ if CurrentID == VAGRANT_ID then
     })
 
     CombatTab:CreateSlider({
-       Name = "Kích thước Hitbox",
+       Name = "Hitbox Size",
        Range = {1, 15},
        Increment = 0.5,
        CurrentValue = 5,
