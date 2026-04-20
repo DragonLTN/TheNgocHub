@@ -135,58 +135,43 @@ elseif CurrentID == VOLLEYBALL_ID then
     -- GAME 2: VOLLEYBALL LEGENDS (Hitbox Ball)
     -- =========================================================
     local Window = Rayfield:CreateWindow({
-       Name = "VOLLEYBALL: The Ngoc Hub",
-       LoadingTitle = "Detecting Ball...",
-       LoadingSubtitle = "by DragonLTN",
-       ConfigurationSaving = { Enabled = false }
-    })
+   Name = "Volleyball Legends | Super Hitbox",
+   LoadingTitle = "Đang khởi tạo...",
+   LoadingSubtitle = "by Gemini",
+   ConfigurationSaving = { Enabled = false }
+})
 
-    local MainTab = Window:CreateTab("Main", 4483362458)
-    local BallHBSize = 5
-    local BallHBEnabled = false
+-- Biến cấu hình (Mặc định tắt)
+local HitboxEnabled = false
+local HitboxSize = 10
+local BallName = "Ball" -- Tên object bóng (Cần khớp với Explorer)
 
-    MainTab:CreateToggle({
-       Name = "Tăng Hitbox Bóng",
-       CurrentValue = false,
-       Callback = function(Value) 
-          BallHBEnabled = Value 
-          if not Value then
-             for _, obj in pairs(workspace:GetChildren()) do
-                if obj.Name == "Ball" and obj:IsA("BasePart") then
-                   obj.Size = Vector3.new(2.1, 2.1, 2.1)
-                   obj.Transparency = 0
-                end
-             end
-          end
-       end,
-    })
+-- Khởi tạo hiệu ứng viền đỏ
+local BallHighlight = Instance.new("Highlight")
+BallHighlight.Name = "HitboxVisual"
+BallHighlight.FillColor = Color3.fromRGB(255, 0, 0)
+BallHighlight.FillTransparency = 0.4
+BallHighlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+BallHighlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop -- Nhìn xuyên tường
+BallHighlight.Enabled = false
 
-    MainTab:CreateSlider({
-       Name = "Kích thước Bóng",
-       Range = {1, 50},
-       Increment = 1,
-       CurrentValue = 5,
-       Callback = function(v) BallHBSize = v end,
-    })
+local MainTab = Window:CreateTab("Settings", 4483362458)
 
-    task.spawn(function()
-        while task.wait(0.1) do
-            if BallHBEnabled then
-                for _, obj in pairs(workspace:GetChildren()) do
-                    if obj.Name == "Ball" and obj:IsA("BasePart") then
-                        obj.CanCollide = false
-                        obj.Size = Vector3.new(BallHBSize, BallHBSize, BallHBSize)
-                        obj.Transparency = 0.6
-                        obj.Color = Color3.fromRGB(255, 0, 0)
-                    end
-                end
-            end
-        end
-    end)
-else
-    Rayfield:Notify({
-       Title = "The Ngoc Hub",
-       Content = "Game chưa được hỗ trợ!",
-       Duration = 5
-    })
-end
+-- Toggle Bật/Tắt
+MainTab:CreateToggle({
+   Name = "Kích hoạt Hitbox & Viền Đỏ",
+   CurrentValue = false,
+   Flag = "HitboxToggle", 
+   Callback = function(Value)
+      HitboxEnabled = Value
+      BallHighlight.Enabled = Value
+      if not Value then BallHighlight.Parent = nil end
+   end,
+})
+
+-- Slider chỉnh lên 100
+MainTab:CreateSlider({
+   Name = "Phạm vi Hitbox",
+   Range = {0, 100},
+   Increment = 1,
+   Suffix = "
