@@ -1,25 +1,26 @@
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 local CurrentID = tostring(game.PlaceId) 
 
--- Chống lỗi identifier bằng cách dùng string
+-- Khai báo ID Game chuẩn chuỗi để tránh lỗi "Expected identifier"
 local VAGRANT_ID = "100283815455755"
 local VOLLEYBALL_ID = "73956553001240"
 
 if CurrentID == VAGRANT_ID then
+    -- =========================================================
+    -- GAME 1: VAGRANT SURVIVAL (Full ESP & Combat)
+    -- =========================================================
     local Window = Rayfield:CreateWindow({
        Name = "VAGRANT SURVIVAL: The Ngoc Hub",
-       LoadingTitle = "Thx For Using",
-       LoadingSubtitle = "Welcome to TheNgocHub by DragonLTN",
+       LoadingTitle = "Welcome DragonLTN",
+       LoadingSubtitle = "by DragonLTN",
        ConfigurationSaving = { Enabled = false }
     })
 
-    -- ================= TAB 1: VISUALS (PLAYER & NPC) =================
     local EspTab = Window:CreateTab("Visuals", 4483362458)
     _G.MasterESP = false
-    _G.NpcESP = false
 
     EspTab:CreateToggle({
-       Name = "ESP Player",
+       Name = "Full ESP Player",
        CurrentValue = false,
        Callback = function(Value)
           _G.MasterESP = Value
@@ -30,21 +31,28 @@ if CurrentID == VAGRANT_ID then
                       local char = player.Character
                       local root = char.HumanoidRootPart
                       local hum = char:FindFirstChildOfClass("Humanoid")
+                      
                       if root and hum then
+                         -- Logic quét vũ khí (Item Holding)
                          local holding = "None"
                          for _, v in pairs(char:GetChildren()) do
-                            if v:IsA("Tool") then holding = v.Name break
+                            if v:IsA("Tool") then 
+                               holding = v.Name 
+                               break
                             elseif v:IsA("Model") and not v:IsA("Accessory") and v.Name ~= "HumanoidRootPart" then
                                if v:FindFirstChild("Handle") or v:FindFirstChild("Muzzle") or v:FindFirstChild("Part") then
-                                  holding = v.Name break
+                                  holding = v.Name 
+                                  break
                                end
                             end
                          end
+
                          local billboard = root:FindFirstChild("PlayerTracker") or Instance.new("BillboardGui", root)
                          billboard.Name = "PlayerTracker"
                          billboard.AlwaysOnTop = true
                          billboard.Size = UDim2.new(0, 200, 0, 100)
                          billboard.ExtentsOffset = Vector3.new(0, 3.5, 0)
+                         
                          local label = billboard:FindFirstChild("L") or Instance.new("TextLabel", billboard)
                          label.Name = "L"
                          label.BackgroundTransparency = 1
@@ -52,13 +60,16 @@ if CurrentID == VAGRANT_ID then
                          label.Font = Enum.Font.SourceSansBold
                          label.TextSize = 14
                          label.TextColor3 = Color3.new(1, 1, 1)
+                         
                          local dist = math.floor((game.Players.LocalPlayer.Character.HumanoidRootPart.Position - root.Position).Magnitude)
+                         -- Hiển thị: Tên, Máu, Vũ khí, Khoảng cách
                          label.Text = string.format("%s\nHP: %d\nItem: %s\n[%d m]", player.Name, math.floor(hum.Health), holding, dist)
                       end
                    end
                 end
                 game:GetService("RunService").RenderStepped:Wait()
              end
+             -- Dọn dẹp ESP khi tắt
              for _, p in pairs(game.Players:GetPlayers()) do
                 if p.Character and p.Character:FindFirstChild("HumanoidRootPart") and p.Character.HumanoidRootPart:FindFirstChild("PlayerTracker") then
                    p.Character.HumanoidRootPart.PlayerTracker:Destroy()
@@ -68,46 +79,12 @@ if CurrentID == VAGRANT_ID then
        end,
     })
 
-    EspTab:CreateToggle({
-       Name = "ESP NPC",
-       CurrentValue = false,
-       Callback = function(Value)
-          _G.NpcESP = Value
-          task.spawn(function()
-             while _G.NpcESP do
-                for _, obj in pairs(workspace:GetChildren()) do
-                   if obj:IsA("Model") and obj:FindFirstChildOfClass("Humanoid") and not game.Players:GetPlayerFromCharacter(obj) then
-                      local root = obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChild("Head")
-                      local hum = obj:FindFirstChildOfClass("Humanoid")
-                      if root and hum and hum.Health > 0 then
-                         local billboard = root:FindFirstChild("NpcTracker") or Instance.new("BillboardGui", root)
-                         billboard.Name = "NpcTracker"
-                         billboard.AlwaysOnTop = true
-                         billboard.Size = UDim2.new(0, 150, 0, 50)
-                         local label = billboard:FindFirstChild("L") or Instance.new("TextLabel", billboard)
-                         label.Name = "L"
-                         label.BackgroundTransparency = 1
-                         label.Size = UDim2.new(1, 0, 1, 0)
-                         label.Font = Enum.Font.SourceSans
-                         label.TextColor3 = Color3.fromRGB(200, 200, 200)
-                         local dist = math.floor((game.Players.LocalPlayer.Character.HumanoidRootPart.Position - root.Position).Magnitude)
-                         label.Text = string.format("NPC: %s\n[%d m]", obj.Name, dist)
-                      end
-                   end
-                end
-                task.wait(0.2)
-             end
-          end)
-       end,
-    })
-
-    -- ================= TAB 2: COMBAT (HITBOX GLOW) =================
     local CombatTab = Window:CreateTab("Combat", 4483362458)
     _G.HeadSize = 5
     _G.HitboxEnabled = false
 
     CombatTab:CreateToggle({
-       Name = "Hitbox",
+       Name = "Hitbox Đầu Đỏ",
        CurrentValue = false,
        Callback = function(Value)
           _G.HitboxEnabled = Value
@@ -119,23 +96,26 @@ if CurrentID == VAGRANT_ID then
                       h.Size = Vector3.new(_G.HeadSize, _G.HeadSize, _G.HeadSize)
                       h.Transparency = 0.7
                       h.CanCollide = false
+                      
+                      -- Hiệu ứng Glow đỏ
                       if not h:FindFirstChild("Glow") then
                          local high = Instance.new("Highlight", h)
                          high.Name = "Glow"
                          high.FillColor = Color3.new(1, 0, 0)
+                         high.FillTransparency = 0.5
+                         high.OutlineColor = Color3.new(1, 1, 1)
                          high.Adornee = h
                       end
                    end
                 end
                 task.wait(0.5)
              end
-             if not _G.HitboxEnabled then
-                for _, p in pairs(game.Players:GetPlayers()) do
-                   if p.Character and p.Character:FindFirstChild("Head") then
-                      p.Character.Head.Size = Vector3.new(1.2, 1.2, 1.2)
-                      p.Character.Head.Transparency = 0
-                      if p.Character.Head:FindFirstChild("Glow") then p.Character.Head.Glow:Destroy() end
-                   end
+             -- Reset khi tắt
+             for _, p in pairs(game.Players:GetPlayers()) do
+                if p.Character and p.Character:FindFirstChild("Head") then
+                   p.Character.Head.Size = Vector3.new(1.2, 1.2, 1.2)
+                   p.Character.Head.Transparency = 0
+                   if p.Character.Head:FindFirstChild("Glow") then p.Character.Head.Glow:Destroy() end
                 end
              end
           end)
@@ -143,44 +123,37 @@ if CurrentID == VAGRANT_ID then
     })
 
     CombatTab:CreateSlider({
-       Name = "Hitbox Size",
+       Name = "Kích thước Hitbox",
        Range = {1, 15},
        Increment = 0.5,
        CurrentValue = 5,
        Callback = function(v) _G.HeadSize = v end,
     })
-else
-    Rayfield:Notify({
-       Title = "The Ngoc Hub",
-       Content = "Game không hỗ trợ ID: " .. CurrentID,
-       Duration = 5
-    })
-end
+
 elseif CurrentID == VOLLEYBALL_ID then
     -- =========================================================
-    -- SCRIPT CHO VOLLEYBALL LEGENDS (THE NGOC HUB)
+    -- GAME 2: VOLLEYBALL LEGENDS (Hitbox Ball)
     -- =========================================================
     local Window = Rayfield:CreateWindow({
-       Name = "VOLLEYBALL LEGENDS: The Ngoc Hub",
+       Name = "VOLLEYBALL: The Ngoc Hub",
        LoadingTitle = "Detecting Ball...",
-       LoadingSubtitle = "Ready to Spike!",
+       LoadingSubtitle = "by DragonLTN",
        ConfigurationSaving = { Enabled = false }
     })
 
-    local MainTab = Window:CreateTab("Main Features", 4483362458)
+    local MainTab = Window:CreateTab("Main", 4483362458)
     local BallHBSize = 5
     local BallHBEnabled = false
 
     MainTab:CreateToggle({
-       Name = "Enable Ball Hitbox",
+       Name = "Tăng Hitbox Bóng",
        CurrentValue = false,
        Callback = function(Value) 
           BallHBEnabled = Value 
           if not Value then
-             -- Reset bóng về mặc định khi tắt
              for _, obj in pairs(workspace:GetChildren()) do
-                if obj.Name == "Ball" then
-                   obj.Size = Vector3.new(2, 2, 2)
+                if obj.Name == "Ball" and obj:IsA("BasePart") then
+                   obj.Size = Vector3.new(2.1, 2.1, 2.1)
                    obj.Transparency = 0
                 end
              end
@@ -189,8 +162,8 @@ elseif CurrentID == VOLLEYBALL_ID then
     })
 
     MainTab:CreateSlider({
-       Name = "Hitbox Size (Max 100)",
-       Range = {1, 100},
+       Name = "Kích thước Bóng",
+       Range = {1, 50},
        Increment = 1,
        CurrentValue = 5,
        Callback = function(v) BallHBSize = v end,
@@ -210,17 +183,10 @@ elseif CurrentID == VOLLEYBALL_ID then
             end
         end
     end)
-
 else
-    -- THÔNG BÁO KHI GAME KHÔNG ĐƯỢC HỖ TRỢ
-    local Window = Rayfield:CreateWindow({
-       Name = "The Ngoc Hub: Error",
-       LoadingTitle = "Unsupported Game",
-       LoadingSubtitle = "ID: " .. CurrentID
-    })
     Rayfield:Notify({
-       Title = "System",
-       Content = "Game ID hien tai chua co trong danh sach!",
+       Title = "The Ngoc Hub",
+       Content = "Game chưa được hỗ trợ!",
        Duration = 5
     })
 end
