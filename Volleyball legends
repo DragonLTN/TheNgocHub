@@ -1,1 +1,27 @@
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
+local Window = Rayfield:CreateWindow({
+   Name = "Volleyball Legends | Hitbox Visualizer",
+   LoadingTitle = "Đang khởi tạo hệ thống...",
+   LoadingSubtitle = "Visual & Hitbox",
+   ConfigurationSaving = { Enabled = false }
+})
+
+-- Biến lưu trữ
+local HitboxEnabled = false
+local HitboxSize = 10
+local BallName = "Ball" -- Chỉnh lại tên bóng cho đúng với game
+
+-- Tạo Highlight (Viền đỏ)
+local BallHighlight = Instance.new("Highlight")
+BallHighlight.FillTransparency = 0.5 -- Độ trong suốt của màu bên trong
+BallHighlight.FillColor = Color3.fromRGB(255, 0, 0) -- Màu đỏ
+BallHighlight.OutlineColor = Color3.fromRGB(255, 255, 255) -- Viền trắng
+BallHighlight.OutlineTransparency = 0 -- Độ rõ của viền
+BallHighlight.Enabled = false
+
+local MainTab = Window:CreateTab("Main Settings", 4483362458)
+local Section = MainTab:CreateSection("Hitbox & Visuals")
+
+-- Toggle Bật/Tắt
+Main
