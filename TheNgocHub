@@ -3,6 +3,7 @@ local CurrentID = tostring(game.PlaceId)
 
 -- Chống lỗi identifier bằng cách dùng string
 local VAGRANT_ID = "100283815455755"
+local VOLLEYBALL_ID = "73956553001240"
 
 if CurrentID == VAGRANT_ID then
     local Window = Rayfield:CreateWindow({
@@ -152,6 +153,74 @@ else
     Rayfield:Notify({
        Title = "The Ngoc Hub",
        Content = "Game không hỗ trợ ID: " .. CurrentID,
+       Duration = 5
+    })
+end
+elseif CurrentID == VOLLEYBALL_ID then
+    -- =========================================================
+    -- SCRIPT CHO VOLLEYBALL LEGENDS (THE NGOC HUB)
+    -- =========================================================
+    local Window = Rayfield:CreateWindow({
+       Name = "VOLLEYBALL LEGENDS: The Ngoc Hub",
+       LoadingTitle = "Detecting Ball...",
+       LoadingSubtitle = "Ready to Spike!",
+       ConfigurationSaving = { Enabled = false }
+    })
+
+    local MainTab = Window:CreateTab("Main Features", 4483362458)
+    local BallHBSize = 5
+    local BallHBEnabled = false
+
+    MainTab:CreateToggle({
+       Name = "Enable Ball Hitbox",
+       CurrentValue = false,
+       Callback = function(Value) 
+          BallHBEnabled = Value 
+          if not Value then
+             -- Reset bóng về mặc định khi tắt
+             for _, obj in pairs(workspace:GetChildren()) do
+                if obj.Name == "Ball" then
+                   obj.Size = Vector3.new(2, 2, 2)
+                   obj.Transparency = 0
+                end
+             end
+          end
+       end,
+    })
+
+    MainTab:CreateSlider({
+       Name = "Hitbox Size (Max 100)",
+       Range = {1, 100},
+       Increment = 1,
+       CurrentValue = 5,
+       Callback = function(v) BallHBSize = v end,
+    })
+
+    task.spawn(function()
+        while task.wait(0.1) do
+            if BallHBEnabled then
+                for _, obj in pairs(workspace:GetChildren()) do
+                    if obj.Name == "Ball" and obj:IsA("BasePart") then
+                        obj.CanCollide = false
+                        obj.Size = Vector3.new(BallHBSize, BallHBSize, BallHBSize)
+                        obj.Transparency = 0.6
+                        obj.Color = Color3.fromRGB(255, 0, 0)
+                    end
+                end
+            end
+        end
+    end)
+
+else
+    -- THÔNG BÁO KHI GAME KHÔNG ĐƯỢC HỖ TRỢ
+    local Window = Rayfield:CreateWindow({
+       Name = "The Ngoc Hub: Error",
+       LoadingTitle = "Unsupported Game",
+       LoadingSubtitle = "ID: " .. CurrentID
+    })
+    Rayfield:Notify({
+       Title = "System",
+       Content = "Game ID hien tai chua co trong danh sach!",
        Duration = 5
     })
 end
