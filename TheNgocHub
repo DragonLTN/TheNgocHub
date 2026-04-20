@@ -174,4 +174,49 @@ MainTab:CreateSlider({
    Name = "Phạm vi Hitbox",
    Range = {0, 100},
    Increment = 1,
-   Suffix = "
+   Suffix = " Studs",
+   CurrentValue = 10,
+   Flag = "HitboxSize", 
+   Callback = function(Value)
+      HitboxSize = Value
+   end,
+})
+
+-- Vòng lặp xử lý logic (Chạy ngầm)
+task.spawn(function()
+    while task.wait(0.01) do
+        if HitboxEnabled then
+            -- Tự động tìm bóng (Quét nhiều tên phổ biến)
+            local ball = workspace:FindFirstChild(BallName) 
+                         or workspace:FindFirstChild("Volleyball") 
+                         or workspace:FindFirstChild("Ball")
+            
+            if ball and ball:IsA("BasePart") then
+                -- Gắn viền đỏ vào bóng
+                BallHighlight.Parent = ball
+                BallHighlight.Enabled = true
+                
+                local lp = game.Players.LocalPlayer
+                if lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
+                    local hrp = lp.Character.HumanoidRootPart
+                    local distance = (ball.Position - hrp.Position).Magnitude
+                    
+                    -- Kiểm tra khoảng cách
+                    if distance <= HitboxSize then
+                        -- Tăng độ sáng viền khi bóng trong tầm đánh
+                        BallHighlight.FillTransparency = 0.1
+                        
+                        -- Tác động lực đẩy bóng (Dựa trên hướng nhân vật)
+                        local moveDirection = (ball.Position - hrp.Position).Unit
+                        ball.AssemblyLinearVelocity = (moveDirection + Vector3.new(0, 1.2, 0)) * 65
+                    else
+                        -- Giảm độ sáng khi ở xa
+                        BallHighlight.FillTransparency = 0.6
+                    end
+                end
+            else
+                BallHighlight.Enabled = false
+            end
+        end
+    end
+end)
