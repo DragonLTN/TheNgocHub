@@ -1,69 +1,71 @@
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({
-   Name = "The Ngoc Hub | Hitbox v3",
-   LoadingTitle = "Đang tối ưu tầm đánh...",
+   Name = "The Ngoc Hub | Hitbox Ultimate v5",
+   LoadingTitle = "Đang cấu hình lại vật lý quái...",
    LoadingSubtitle = "by The Ngoc",
-   ConfigurationSaving = {
-      Enabled = true,
-      FolderName = "TheNgocHub_Hitbox", 
-      FileName = "ConfigV3"
-   }
+   ConfigurationSaving = {Enabled = true, FolderName = "TheNgocHub", FileName = "ConfigV5"}
 })
 
-_G.HitboxSize = 20 -- Tăng mặc định lên 20 để dễ test
+_G.HitboxSize = 20
 _G.HitboxEnabled = false
+_G.Transparency = 0.7
 
 local MainTab = Window:CreateTab("Chức Năng", 4483362458)
 
 MainTab:CreateToggle({
-   Name = "Bật Hitbox (Đánh Xa)",
+   Name = "Kích Hoạt Hitbox To",
    CurrentValue = false,
    Flag = "HitboxToggle", 
-   Callback = function(Value)
-      _G.HitboxEnabled = Value
+   Callback = function(Value) 
+      _G.HitboxEnabled = Value 
+      if not Value then
+          -- Thông báo khi tắt
+          Rayfield:Notify({Title = "Thông báo", Content = "Đã tắt Hitbox, hãy đợi quái hồi phục", Duration = 2})
+      end
    end,
 })
 
 MainTab:CreateSlider({
-   Name = "Tầm Đánh (Size)",
+   Name = "Kích Thước (Tầm Đánh)",
    Range = {1, 100},
    Increment = 1,
-   Suffix = " Studs",
    CurrentValue = 20,
    Flag = "SizeSlider", 
-   Callback = function(Value)
-      _G.HitboxSize = Value
-   end,
+   Callback = function(Value) _G.HitboxSize = Value end,
 })
 
--- Vòng lặp xử lý ép kích thước (Force Size)
+-- Logic Cưỡng Chế Toàn Bộ Bộ Phận (Full Body Hitbox)
 task.spawn(function()
-    while task.wait(0.1) do -- Chạy cực nhanh để chống game reset hitbox
+    while task.wait(0.2) do
         if _G.HitboxEnabled then
-            for _, v in pairs(game:GetService("Workspace"):GetDescendants()) do
-                if v:IsA("Model") and v:FindFirstChildOfClass("Humanoid") and v.Name ~= game.Players.LocalPlayer.Name then
+            for _, model in pairs(game:GetService("Workspace"):GetDescendants()) do
+                -- Nhận diện quái: Là Model và có Humanoid
+                if model:IsA("Model") and model:FindFirstChildOfClass("Humanoid") and model.Name ~= game.Players.LocalPlayer.Name then
                     
-                    -- Tìm tất cả các bộ phận có thể làm hitbox
-                    local root = v:FindFirstChild("HumanoidRootPart") or v:FindFirstChild("Torso") or v:FindFirstChild("Head")
-                    
-                    if root then
-                        -- ÉP KÍCH THƯỚC: Đây là phần giúp bạn đánh từ xa
-                        root.Size = Vector3.new(_G.HitboxSize, _G.HitboxSize, _G.HitboxSize)
-                        root.Transparency = 0.6 -- Để hơi mờ để bạn thấy đường đi
-                        root.Color = Color3.fromRGB(255, 0, 0)
-                        root.Material = Enum.Material.Neon
-                        root.CanCollide = false -- Quan trọng: Để không bị đẩy văng khi quái lại gần
-                        
-                        -- Giữ viền Highlight cho quái
-                        local highlight = v:FindFirstChild("HitboxHighlight")
-                        if not highlight then
-                            highlight = Instance.new("Highlight")
-                            highlight.Name = "HitboxHighlight"
-                            highlight.Parent = v
-                            highlight.FillColor = Color3.fromRGB(255, 0, 0)
+                    -- Thay vì chỉ chỉnh 1 bộ phận, ta chỉnh tất cả để đảm bảo va chạm
+                    for _, part in pairs(model:GetChildren()) do
+                        if part:IsA("BasePart") then
+                            -- Ép thông số vật lý
+                            part.Size = Vector3.new(_G.HitboxSize, _G.HitboxSize, _G.HitboxSize)
+                            part.Transparency = _G.Transparency
+                            part.Color = Color3.fromRGB(255, 0, 0) -- Màu đỏ Neon
+                            part.Material = Enum.Material.Neon
+                            
+                            -- MỞ KHÓA VA CHẠM (Cực kỳ quan trọng để đánh từ xa)
+                            part.CanCollide = false
+                            part.CanTouch = true
+                            part.Massless = true -- Làm quái nhẹ đi để không bị kẹt khi hitbox to
                         end
-                        highlight.Enabled = true
+                    end
+                    
+                    -- Thêm Highlight cho Model
+                    if not model:FindFirstChild("HitboxHighlight") then
+                        local hl = Instance.new("Highlight", model)
+                        hl.Name = "HitboxHighlight"
+                        hl.FillColor = Color3.fromRGB(255, 0, 0)
+                        hl.OutlineColor = Color3.fromRGB(255, 255, 255)
+                        hl.FillAlpha = 0.5
                     end
                 end
             end
@@ -72,7 +74,7 @@ task.spawn(function()
 end)
 
 Rayfield:Notify({
-   Title = "The Ngoc Hub",
-   Content = "Hãy kéo Slider lên mức 20-30 để bắt đầu đánh xa!",
+   Title = "Thành Công!",
+   Content = "Script v5 đã sẵn sàng. Hãy bật Toggle và tăng Size lên 30!",
    Duration = 5,
 })
