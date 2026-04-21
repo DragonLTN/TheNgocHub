@@ -150,13 +150,13 @@ CombatTab:CreateSlider({
    Callback = function(v) _G.HeadSize = v end,
 })
 
--- ================= TAB 3: TELEPORT (ANTI-PULLBACK) =================
+-- ================= TAB 3: TELEPORT (ULTIMATE ANTI-PULLBACK) =================
 local TpTab = Window:CreateTab("Teleport", 4483362458)
 
 local SelectedPlayer = nil
 local OldPosition = nil
-local CurrentTween = nil
-_G.TpSpeed = 40
+local IsTeleporting = false
+_G.TpSpeed = 35 -- Để tầm 35-45 là an toàn nhất để server không nghi ngờ
 
 local PlayerDropdown = TpTab:CreateDropdown({
    Name = "Chọn Người Chơi",
@@ -177,46 +177,54 @@ TpTab:CreateButton({
 })
 
 TpTab:CreateSlider({
-   Name = "Tốc độ Bay (Safe: 30-60)",
-   Range = {10, 100},
+   Name = "Tốc độ (Nên để 30-45)",
+   Range = {10, 80},
    Increment = 5,
-   CurrentValue = 40,
+   CurrentValue = 35,
    Callback = function(v) _G.TpSpeed = v end,
 })
 
 TpTab:CreateButton({
    Name = "Bay tới Địch (Lưu vị trí cũ)",
    Callback = function()
-      if SelectedPlayer then
+      if SelectedPlayer and not IsTeleporting then
          local p = game.Players:FindFirstChild(SelectedPlayer)
          if p and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
             local char = game.Players.LocalPlayer.Character
             local hrp = char.HumanoidRootPart
             local hum = char:FindFirstChildOfClass("Humanoid")
             
-            OldPosition = hrp.CFrame -- Lưu lại chỗ cũ
+            IsTeleporting = true
+            OldPosition = hrp.CFrame
             local target = p.Character.HumanoidRootPart
+            
+            -- FIX CỨNG: Vô hiệu hóa mọi lực đẩy từ server
+            task.spawn(function()
+               local connection
+               connection = game:GetService("RunService").Stepped:Connect(function()
+                  if IsTeleporting then
+                     -- Ép vận tốc về 0 tuyệt đối để chống giật lại
+                     hrp.Velocity = Vector3.new(0,0,0)
+                     hrp.AssemblyLinearVelocity = Vector3.new(0,0,0)
+                     -- Chống ngã/giật trạng thái
+                     hum:ChangeState(Enum.HumanoidStateType.Physics)
+                  else
+                     connection:Disconnect()
+                  end
+               end)
+            end)
+
             local dist = (hrp.Position - target.Position).Magnitude
-            
-            if CurrentTween then CurrentTween:Cancel() end
-            
-            -- Chống giật: Tắt vật lý nhân vật khi bay
-            hum.PlatformStand = true 
-            
-            CurrentTween = game:GetService("TweenService"):Create(hrp, TweenInfo.new(dist/_G.TpSpeed, Enum.EasingStyle.Linear), {
+            local tween = game:GetService("TweenService"):Create(hrp, TweenInfo.new(dist/_G.TpSpeed, Enum.EasingStyle.Linear), {
                CFrame = target.CFrame * CFrame.new(0, 0, 3)
             })
-            CurrentTween:Play()
             
-            task.spawn(function()
-               while CurrentTween and CurrentTween.PlaybackState == Enum.PlaybackState.Playing do
-                  hrp.Velocity = Vector3.new(0, 0, 0) -- Reset vận tốc liên tục
-                  task.wait()
-               end
-               hum.PlatformStand = false -- Trả lại trạng thái cũ khi tới nơi
+            tween:Play()
+            tween.Completed:Connect(function()
+               IsTeleporting = false
+               hum:ChangeState(Enum.HumanoidStateType.Landing) -- Trả lại trạng thái bình thường
+               Rayfield:Notify({Title = "The Ngoc Hub", Content = "Đã tới mục tiêu!", Duration = 2})
             end)
-            
-            Rayfield:Notify({Title = "The Ngoc Hub", Content = "Đang bay... Chống giật đã bật!", Duration = 2})
          end
       end
    end,
@@ -225,24 +233,12 @@ TpTab:CreateButton({
 TpTab:CreateButton({
    Name = "Biến về chỗ cũ (Flash)",
    Callback = function()
+      IsTeleporting = false
+      task.wait(0.1)
+      local hrp = game.Players.LocalPlayer.Character.HumanoidRootPart
       if OldPosition then
-         if CurrentTween then CurrentTween:Cancel() end
-         local hrp = game.Players.LocalPlayer.Character.HumanoidRootPart
          hrp.CFrame = OldPosition
-         game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid").PlatformStand = false
-         Rayfield:Notify({Title = "The Ngoc Hub", Content = "Đã quay về vị trí an toàn!", Duration = 2})
-      else
-         Rayfield:Notify({Title = "Lỗi", Content = "Chưa có vị trí cũ để quay về!", Duration = 2})
-      end
-   end,
-})
-
-TpTab:CreateButton({
-   Name = "Dừng bay khẩn cấp",
-   Callback = function()
-      if CurrentTween then 
-         CurrentTween:Cancel() 
-         game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid").PlatformStand = false
+         Rayfield:Notify({Title = "The Ngoc Hub", Content = "Đã về chỗ cũ!", Duration = 2})
       end
    end,
 })
