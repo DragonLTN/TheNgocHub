@@ -1,162 +1,10 @@
-local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
-
-local Window = Rayfield:CreateWindow({
-   Name = "VAGRANT SURVIVAL: The Ngoc Hub",
-   LoadingTitle = "Thx For Using",
-   LoadingSubtitle = "Welcome to TheNgocHub by DragonLTN",
-   ConfigurationSaving = { Enabled = false }
-})
-
--- ================= TAB 1: VISUALS (PLAYER & NPC) =================
-local EspTab = Window:CreateTab("Visuals", 4483362458)
-
-_G.MasterESP = false
-_G.NpcESP = false
-
-EspTab:CreateToggle({
-   Name = "ESP Player",
-   CurrentValue = false,
-   Callback = function(Value)
-      _G.MasterESP = Value
-      task.spawn(function()
-         while _G.MasterESP do
-            for _, player in pairs(game.Players:GetPlayers()) do
-               if player ~= game.Players.LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-                  local char = player.Character
-                  local root = char.HumanoidRootPart
-                  local hum = char:FindFirstChildOfClass("Humanoid")
-                  
-                  if root and hum then
-                     local holding = "None"
-                     for _, v in pairs(char:GetChildren()) do
-                        if v:IsA("Tool") then holding = v.Name break
-                        elseif v:IsA("Model") and not v:IsA("Accessory") and v.Name ~= "HumanoidRootPart" then
-                           if v:FindFirstChild("Handle") or v:FindFirstChild("Muzzle") or v:FindFirstChild("Part") then
-                              holding = v.Name break
-                           end
-                        end
-                     end
-
-                     local billboard = root:FindFirstChild("PlayerTracker") or Instance.new("BillboardGui", root)
-                     billboard.Name = "PlayerTracker"
-                     billboard.AlwaysOnTop = true
-                     billboard.Size = UDim2.new(0, 200, 0, 100)
-                     billboard.ExtentsOffset = Vector3.new(0, 3.5, 0)
-                     
-                     local label = billboard:FindFirstChild("L") or Instance.new("TextLabel", billboard)
-                     label.Name = "L"
-                     label.BackgroundTransparency = 1
-                     label.Size = UDim2.new(1, 0, 1, 0)
-                     label.Font = Enum.Font.SourceSansBold
-                     label.TextSize = 14
-                     label.TextColor3 = Color3.new(1, 1, 1)
-                     label.TextStrokeTransparency = 0
-                     
-                     local dist = math.floor((game.Players.LocalPlayer.Character.HumanoidRootPart.Position - root.Position).Magnitude)
-                     label.Text = string.format("%s\nHP: %d\nItem: %s\n[%d m]", player.Name, math.floor(hum.Health), holding, dist)
-                  end
-               end
-            end
-            game:GetService("RunService").RenderStepped:Wait()
-         end
-         for _, p in pairs(game.Players:GetPlayers()) do
-            if p.Character and p.Character:FindFirstChild("HumanoidRootPart") and p.Character.HumanoidRootPart:FindFirstChild("PlayerTracker") then
-               p.Character.HumanoidRootPart.PlayerTracker:Destroy()
-            end
-         end
-      end)
-   end,
-})
-
-EspTab:CreateToggle({
-   Name = "ESP NPC",
-   CurrentValue = false,
-   Callback = function(Value)
-      _G.NpcESP = Value
-      task.spawn(function()
-         while _G.NpcESP do
-            for _, obj in pairs(workspace:GetChildren()) do
-               if obj:IsA("Model") and obj:FindFirstChildOfClass("Humanoid") and not game.Players:GetPlayerFromCharacter(obj) then
-                  local root = obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChild("Head")
-                  local hum = obj:FindFirstChildOfClass("Humanoid")
-                  if root and hum and hum.Health > 0 then
-                     local billboard = root:FindFirstChild("NpcTracker") or Instance.new("BillboardGui", root)
-                     billboard.Name = "NpcTracker"
-                     billboard.AlwaysOnTop = true
-                     billboard.Size = UDim2.new(0, 150, 0, 50)
-                     billboard.ExtentsOffset = Vector3.new(0, 3, 0)
-                     
-                     local label = billboard:FindFirstChild("L") or Instance.new("TextLabel", billboard)
-                     label.Name = "L"
-                     label.BackgroundTransparency = 1
-                     label.Size = UDim2.new(1, 0, 1, 0)
-                     label.Font = Enum.Font.SourceSans
-                     label.TextSize = 12
-                     label.TextColor3 = Color3.fromRGB(200, 200, 200)
-                     label.TextStrokeTransparency = 0
-                     
-                     local dist = math.floor((game.Players.LocalPlayer.Character.HumanoidRootPart.Position - root.Position).Magnitude)
-                     label.Text = string.format("NPC: %s\n[%d m]", obj.Name, dist)
-                  end
-               end
-            end
-            task.wait(0.2)
-         end
-      end)
-   end,
-})
-
--- ================= TAB 2: COMBAT (HITBOX) =================
-local CombatTab = Window:CreateTab("Combat", 4483362458)
-_G.HeadSize = 5
-_G.HitboxEnabled = false
-
-CombatTab:CreateToggle({
-   Name = "Hitbox Head",
-   CurrentValue = false,
-   Callback = function(Value)
-      _G.HitboxEnabled = Value
-      task.spawn(function()
-         while _G.HitboxEnabled do
-            for _, p in pairs(game.Players:GetPlayers()) do
-               if p ~= game.Players.LocalPlayer and p.Character and p.Character:FindFirstChild("Head") then
-                  local h = p.Character.Head
-                  h.Size = Vector3.new(_G.HeadSize, _G.HeadSize, _G.HeadSize)
-                  h.Transparency = 0.7
-                  h.CanCollide = false
-                  h.Massless = true -- Fix nặng nề/đứng hình
-                  
-                  if not h:FindFirstChild("Glow") then
-                     local high = Instance.new("Highlight", h)
-                     high.Name = "Glow"
-                     high.FillColor = Color3.new(1, 0, 0)
-                     high.FillTransparency = 0.5
-                     high.OutlineColor = Color3.new(1, 1, 1)
-                     high.Adornee = h
-                  end
-               end
-            end
-            task.wait(0.5)
-         end
-      end)
-   end,
-})
-
-CombatTab:CreateSlider({
-   Name = "Hitbox Size",
-   Range = {1, 15},
-   Increment = 0.5,
-   CurrentValue = 5,
-   Callback = function(v) _G.HeadSize = v end,
-})
-
--- ================= TAB 3: TELEPORT (ULTIMATE ANTI-PULLBACK) =================
+-- ================= TAB 3: TELEPORT (STICKY FOLLOW ON/OFF) =================
 local TpTab = Window:CreateTab("Teleport", 4483362458)
 
 local SelectedPlayer = nil
-local OldPosition = nil
-local IsTeleporting = false
-_G.TpSpeed = 35 -- Để tầm 35-45 là an toàn nhất để server không nghi ngờ
+_G.FollowEnabled = false -- Biến kiểm tra trạng thái On/Off
+_G.TpSpeed = 150
+_G.HeightOffset = 20
 
 local PlayerDropdown = TpTab:CreateDropdown({
    Name = "Chọn Người Chơi",
@@ -177,68 +25,73 @@ TpTab:CreateButton({
 })
 
 TpTab:CreateSlider({
-   Name = "Tốc độ (Nên để 30-45)",
-   Range = {10, 80},
-   Increment = 5,
-   CurrentValue = 35,
+   Name = "Tốc độ Đuổi theo",
+   Range = {50, 500},
+   Increment = 10,
+   CurrentValue = 150,
    Callback = function(v) _G.TpSpeed = v end,
 })
 
-TpTab:CreateButton({
-   Name = "Bay tới Địch (Lưu vị trí cũ)",
-   Callback = function()
-      if SelectedPlayer and not IsTeleporting then
-         local p = game.Players:FindFirstChild(SelectedPlayer)
-         if p and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+-- CHUYỂN THÀNH TOGGLE ON/OFF
+TpTab:CreateToggle({
+   Name = "Bám đuổi mục tiêu (On/Off)",
+   CurrentValue = false,
+   Callback = function(Value)
+      _G.FollowEnabled = Value
+      
+      if _G.FollowEnabled then
+         task.spawn(function()
             local char = game.Players.LocalPlayer.Character
             local hrp = char.HumanoidRootPart
             local hum = char:FindFirstChildOfClass("Humanoid")
-            
-            IsTeleporting = true
-            OldPosition = hrp.CFrame
-            local target = p.Character.HumanoidRootPart
-            
-            -- FIX CỨNG: Vô hiệu hóa mọi lực đẩy từ server
-            task.spawn(function()
-               local connection
-               connection = game:GetService("RunService").Stepped:Connect(function()
-                  if IsTeleporting then
-                     -- Ép vận tốc về 0 tuyệt đối để chống giật lại
-                     hrp.Velocity = Vector3.new(0,0,0)
-                     hrp.AssemblyLinearVelocity = Vector3.new(0,0,0)
-                     -- Chống ngã/giật trạng thái
-                     hum:ChangeState(Enum.HumanoidStateType.Physics)
-                  else
-                     connection:Disconnect()
-                  end
-               end)
-            end)
 
-            local dist = (hrp.Position - target.Position).Magnitude
-            local tween = game:GetService("TweenService"):Create(hrp, TweenInfo.new(dist/_G.TpSpeed, Enum.EasingStyle.Linear), {
-               CFrame = target.CFrame * CFrame.new(0, 0, 3)
-            })
+            Rayfield:Notify({Title = "The Ngoc Hub", Content = "Đã bật bám đuổi!", Duration = 2})
+
+            while _G.FollowEnabled do
+               local targetPlayer = game.Players:FindFirstChild(SelectedPlayer)
+               
+               if targetPlayer and targetPlayer.Character and targetPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                  local targetHrp = targetPlayer.Character.HumanoidRootPart
+                  -- Vị trí đích: Luôn là trên đầu địch 20 studs
+                  local targetPos = (targetHrp.CFrame * CFrame.new(0, _G.HeightOffset, 0)).Position
+                  
+                  local currentPos = hrp.Position
+                  local dist = (targetPos - currentPos).Magnitude
+
+                  if dist > 0.5 then
+                     -- Tính toán hướng di chuyển để bám theo khi địch chạy
+                     local direction = (targetPos - currentPos).Unit
+                     local moveStep = direction * math.min(dist, _G.TpSpeed * game:GetService("RunService").Heartbeat:Wait())
+                     
+                     hrp.CFrame = CFrame.new(currentPos + moveStep, targetHrp.Position)
+                  else
+                     -- Nếu đã sát bên thì dán chặt vào luôn
+                     hrp.CFrame = targetHrp.CFrame * CFrame.new(0, _G.HeightOffset, 0)
+                  end
+                  
+                  -- Chống giật (Rubberband)
+                  hrp.Velocity = Vector3.new(0,0,0)
+                  hrp.AssemblyLinearVelocity = Vector3.new(0,0,0)
+                  hum:ChangeState(Enum.HumanoidStateType.Physics)
+               else
+                  -- Nếu mục tiêu thoát hoặc chết
+                  task.wait(0.5)
+               end
+               game:GetService("RunService").Heartbeat:Wait()
+            end
             
-            tween:Play()
-            tween.Completed:Connect(function()
-               IsTeleporting = false
-               hum:ChangeState(Enum.HumanoidStateType.Landing) -- Trả lại trạng thái bình thường
-               Rayfield:Notify({Title = "The Ngoc Hub", Content = "Đã tới mục tiêu!", Duration = 2})
-            end)
-         end
+            -- KHI TẮT (OFF): Trả lại trạng thái bình thường
+            hum:ChangeState(Enum.HumanoidStateType.Landing)
+            Rayfield:Notify({Title = "The Ngoc Hub", Content = "Đã tắt bám đuổi!", Duration = 2})
+         end)
       end
    end,
 })
 
-TpTab:CreateButton({
-   Name = "Biến về chỗ cũ (Flash)",
-   Callback = function()
-      IsTeleporting = false
-      task.wait(0.1)
-      local hrp = game.Players.LocalPlayer.Character.HumanoidRootPart
-      if OldPosition then
-         hrp.CFrame = OldPosition
-         Rayfield:Notify({Title = "The Ngoc Hub", Content = "Đã về chỗ cũ!", Duration = 2})
-      end
-   end,
+TpTab:CreateSlider({
+   Name = "Độ cao bám theo (Studs)",
+   Range = {5, 100},
+   Increment = 5,
+   CurrentValue = 20,
+   Callback = function(v) _G.HeightOffset = v end,
 })
