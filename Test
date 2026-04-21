@@ -1,33 +1,26 @@
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({
-   Name = "The Ngoc Hub | Hitbox Ultimate v5",
-   LoadingTitle = "Đang cấu hình lại vật lý quái...",
+   Name = "The Ngoc Hub | Hitbox v6 Fixed",
+   LoadingTitle = "Đang khóa mục tiêu...",
    LoadingSubtitle = "by The Ngoc",
-   ConfigurationSaving = {Enabled = true, FolderName = "TheNgocHub", FileName = "ConfigV5"}
+   ConfigurationSaving = {Enabled = true, FolderName = "TheNgocHub", FileName = "ConfigV6"}
 })
 
 _G.HitboxSize = 20
 _G.HitboxEnabled = false
-_G.Transparency = 0.7
 
 local MainTab = Window:CreateTab("Chức Năng", 4483362458)
 
 MainTab:CreateToggle({
-   Name = "Kích Hoạt Hitbox To",
+   Name = "Kích Hoạt Hitbox Cố Định",
    CurrentValue = false,
    Flag = "HitboxToggle", 
-   Callback = function(Value) 
-      _G.HitboxEnabled = Value 
-      if not Value then
-          -- Thông báo khi tắt
-          Rayfield:Notify({Title = "Thông báo", Content = "Đã tắt Hitbox, hãy đợi quái hồi phục", Duration = 2})
-      end
-   end,
+   Callback = function(Value) _G.HitboxEnabled = Value end,
 })
 
 MainTab:CreateSlider({
-   Name = "Kích Thước (Tầm Đánh)",
+   Name = "Kích Thước",
    Range = {1, 100},
    Increment = 1,
    CurrentValue = 20,
@@ -35,37 +28,38 @@ MainTab:CreateSlider({
    Callback = function(Value) _G.HitboxSize = Value end,
 })
 
--- Logic Cưỡng Chế Toàn Bộ Bộ Phận (Full Body Hitbox)
+-- Logic Tạo Hitbox Phụ (Gắn chặt vào quái)
 task.spawn(function()
-    while task.wait(0.2) do
+    while task.wait(0.5) do
         if _G.HitboxEnabled then
             for _, model in pairs(game:GetService("Workspace"):GetDescendants()) do
-                -- Nhận diện quái: Là Model và có Humanoid
+                -- Chỉ lọc quái (Model có Humanoid)
                 if model:IsA("Model") and model:FindFirstChildOfClass("Humanoid") and model.Name ~= game.Players.LocalPlayer.Name then
                     
-                    -- Thay vì chỉ chỉnh 1 bộ phận, ta chỉnh tất cả để đảm bảo va chạm
-                    for _, part in pairs(model:GetChildren()) do
-                        if part:IsA("BasePart") then
-                            -- Ép thông số vật lý
-                            part.Size = Vector3.new(_G.HitboxSize, _G.HitboxSize, _G.HitboxSize)
-                            part.Transparency = _G.Transparency
-                            part.Color = Color3.fromRGB(255, 0, 0) -- Màu đỏ Neon
-                            part.Material = Enum.Material.Neon
-                            
-                            -- MỞ KHÓA VA CHẠM (Cực kỳ quan trọng để đánh từ xa)
-                            part.CanCollide = false
-                            part.CanTouch = true
-                            part.Massless = true -- Làm quái nhẹ đi để không bị kẹt khi hitbox to
-                        end
-                    end
+                    local root = model:FindFirstChild("HumanoidRootPart") or model:FindFirstChild("Torso") or model:FindFirstChild("Head")
                     
-                    -- Thêm Highlight cho Model
-                    if not model:FindFirstChild("HitboxHighlight") then
-                        local hl = Instance.new("Highlight", model)
-                        hl.Name = "HitboxHighlight"
-                        hl.FillColor = Color3.fromRGB(255, 0, 0)
-                        hl.OutlineColor = Color3.fromRGB(255, 255, 255)
-                        hl.FillAlpha = 0.5
+                    if root then
+                        -- 1. Xử lý bộ phận gốc
+                        root.Size = Vector3.new(_G.HitboxSize, _G.HitboxSize, _G.HitboxSize)
+                        root.Transparency = 0.7
+                        root.Color = Color3.fromRGB(255, 0, 0)
+                        root.Material = Enum.Material.Neon
+                        root.CanCollide = false
+                        root.CanTouch = true
+                        
+                        -- 2. Chống rơi: Đảm bảo RootPart không bị tách rời khỏi Model
+                        if root:IsA("Part") then
+                            root.Anchored = false
+                        end
+
+                        -- 3. Tạo viền Highlight chuẩn
+                        if not model:FindFirstChild("HitboxHighlight") then
+                            local hl = Instance.new("Highlight", model)
+                            hl.Name = "HitboxHighlight"
+                            hl.FillColor = Color3.fromRGB(255, 0, 0)
+                            hl.OutlineColor = Color3.fromRGB(255, 255, 255)
+                            hl.FillAlpha = 0.5
+                        end
                     end
                 end
             end
@@ -74,7 +68,7 @@ task.spawn(function()
 end)
 
 Rayfield:Notify({
-   Title = "Thành Công!",
-   Content = "Script v5 đã sẵn sàng. Hãy bật Toggle và tăng Size lên 30!",
+   Title = "Hoàn Tất!",
+   Content = "Bản v6 đã sửa lỗi rơi Hitbox. Hãy bật Toggle để kiểm tra!",
    Duration = 5,
 })
