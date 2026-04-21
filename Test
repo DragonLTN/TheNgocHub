@@ -1,24 +1,23 @@
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({
-   Name = "The Ngoc Hub | Hitbox v2",
-   LoadingTitle = "Đang quét cấu trúc quái...",
+   Name = "The Ngoc Hub | Hitbox v3",
+   LoadingTitle = "Đang tối ưu tầm đánh...",
    LoadingSubtitle = "by The Ngoc",
    ConfigurationSaving = {
       Enabled = true,
       FolderName = "TheNgocHub_Hitbox", 
-      FileName = "ConfigV2"
+      FileName = "ConfigV3"
    }
 })
 
-_G.HitboxSize = 10
+_G.HitboxSize = 20 -- Tăng mặc định lên 20 để dễ test
 _G.HitboxEnabled = false
-_G.HitboxTransparency = 0.5
 
 local MainTab = Window:CreateTab("Chức Năng", 4483362458)
 
 MainTab:CreateToggle({
-   Name = "Kích hoạt Hitbox Quái",
+   Name = "Bật Hitbox (Đánh Xa)",
    CurrentValue = false,
    Flag = "HitboxToggle", 
    Callback = function(Value)
@@ -27,43 +26,42 @@ MainTab:CreateToggle({
 })
 
 MainTab:CreateSlider({
-   Name = "Kích thước",
+   Name = "Tầm Đánh (Size)",
    Range = {1, 100},
    Increment = 1,
-   Suffix = " Size",
-   CurrentValue = 10,
+   Suffix = " Studs",
+   CurrentValue = 20,
    Flag = "SizeSlider", 
    Callback = function(Value)
       _G.HitboxSize = Value
    end,
 })
 
--- Vòng lặp xử lý quét diện rộng
+-- Vòng lặp xử lý ép kích thước (Force Size)
 task.spawn(function()
-    while task.wait(0.5) do -- Tăng tốc độ quét lên 0.5s để nhận quái mới nhanh hơn
+    while task.wait(0.1) do -- Chạy cực nhanh để chống game reset hitbox
         if _G.HitboxEnabled then
             for _, v in pairs(game:GetService("Workspace"):GetDescendants()) do
-                -- Lọc các Model có Humanoid (đặc điểm của quái trong ảnh)
                 if v:IsA("Model") and v:FindFirstChildOfClass("Humanoid") and v.Name ~= game.Players.LocalPlayer.Name then
                     
-                    -- Tìm bộ phận chính (Ưu tiên HumanoidRootPart, nếu không có thì lấy Torso hoặc Head)
-                    local targetPart = v:FindFirstChild("HumanoidRootPart") or v:FindFirstChild("Torso") or v:FindFirstChild("Head")
+                    -- Tìm tất cả các bộ phận có thể làm hitbox
+                    local root = v:FindFirstChild("HumanoidRootPart") or v:FindFirstChild("Torso") or v:FindFirstChild("Head")
                     
-                    if targetPart and targetPart:IsA("BasePart") then
-                        targetPart.Size = Vector3.new(_G.HitboxSize, _G.HitboxSize, _G.HitboxSize)
-                        targetPart.Transparency = _G.HitboxTransparency
-                        targetPart.Color = Color3.fromRGB(255, 0, 0)
-                        targetPart.Material = Enum.Material.Neon
-                        targetPart.CanCollide = false
+                    if root then
+                        -- ÉP KÍCH THƯỚC: Đây là phần giúp bạn đánh từ xa
+                        root.Size = Vector3.new(_G.HitboxSize, _G.HitboxSize, _G.HitboxSize)
+                        root.Transparency = 0.6 -- Để hơi mờ để bạn thấy đường đi
+                        root.Color = Color3.fromRGB(255, 0, 0)
+                        root.Material = Enum.Material.Neon
+                        root.CanCollide = false -- Quan trọng: Để không bị đẩy văng khi quái lại gần
                         
-                        -- Thêm viền Highlight để quái luôn rực rỡ
+                        -- Giữ viền Highlight cho quái
                         local highlight = v:FindFirstChild("HitboxHighlight")
                         if not highlight then
                             highlight = Instance.new("Highlight")
                             highlight.Name = "HitboxHighlight"
                             highlight.Parent = v
                             highlight.FillColor = Color3.fromRGB(255, 0, 0)
-                            highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
                         end
                         highlight.Enabled = true
                     end
@@ -75,7 +73,6 @@ end)
 
 Rayfield:Notify({
    Title = "The Ngoc Hub",
-   Content = "Nếu vẫn chưa hiện, hãy đảm bảo bạn đã bật Toggle!",
+   Content = "Hãy kéo Slider lên mức 20-30 để bắt đầu đánh xa!",
    Duration = 5,
-   Image = 4483362458,
 })
