@@ -29,13 +29,10 @@ EspTab:CreateToggle({
                   if root and hum then
                      local holding = "None"
                      for _, v in pairs(char:GetChildren()) do
-                        if v:IsA("Tool") then 
-                           holding = v.Name 
-                           break
+                        if v:IsA("Tool") then holding = v.Name break
                         elseif v:IsA("Model") and not v:IsA("Accessory") and v.Name ~= "HumanoidRootPart" then
                            if v:FindFirstChild("Handle") or v:FindFirstChild("Muzzle") or v:FindFirstChild("Part") then
-                              holding = v.Name 
-                              break
+                              holding = v.Name break
                            end
                         end
                      end
@@ -82,7 +79,6 @@ EspTab:CreateToggle({
                if obj:IsA("Model") and obj:FindFirstChildOfClass("Humanoid") and not game.Players:GetPlayerFromCharacter(obj) then
                   local root = obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChild("Head")
                   local hum = obj:FindFirstChildOfClass("Humanoid")
-                  
                   if root and hum and hum.Health > 0 then
                      local billboard = root:FindFirstChild("NpcTracker") or Instance.new("BillboardGui", root)
                      billboard.Name = "NpcTracker"
@@ -116,7 +112,7 @@ _G.HeadSize = 5
 _G.HitboxEnabled = false
 
 CombatTab:CreateToggle({
-   Name = "Hitbox",
+   Name = "Hitbox Head",
    CurrentValue = false,
    Callback = function(Value)
       _G.HitboxEnabled = Value
@@ -128,7 +124,7 @@ CombatTab:CreateToggle({
                   h.Size = Vector3.new(_G.HeadSize, _G.HeadSize, _G.HeadSize)
                   h.Transparency = 0.7
                   h.CanCollide = false
-                  h.Massless = true -- Chống đứng hình/nặng nề
+                  h.Massless = true -- Fix nặng nề/đứng hình
                   
                   if not h:FindFirstChild("Glow") then
                      local high = Instance.new("Highlight", h)
@@ -136,7 +132,7 @@ CombatTab:CreateToggle({
                      high.FillColor = Color3.new(1, 0, 0)
                      high.FillTransparency = 0.5
                      high.OutlineColor = Color3.new(1, 1, 1)
-                     high.OutlineTransparency = 0
+                     high.Adornee = h
                   end
                end
             end
@@ -154,19 +150,19 @@ CombatTab:CreateSlider({
    Callback = function(v) _G.HeadSize = v end,
 })
 
--- ================= TAB 3: TELEPORT (FIX ANTI) =================
+-- ================= TAB 3: TELEPORT (ANTI-PULLBACK) =================
 local TpTab = Window:CreateTab("Teleport", 4483362458)
 
 local SelectedPlayer = nil
-_G.TpSpeed = 50
+local OldPosition = nil
+local CurrentTween = nil
+_G.TpSpeed = 40
 
 local PlayerDropdown = TpTab:CreateDropdown({
    Name = "Chọn Người Chơi",
    Options = {},
    CurrentOption = "",
-   Callback = function(Option)
-      SelectedPlayer = Option[1]
-   end,
+   Callback = function(Option) SelectedPlayer = Option[1] end,
 })
 
 TpTab:CreateButton({
@@ -181,28 +177,72 @@ TpTab:CreateButton({
 })
 
 TpTab:CreateSlider({
-   Name = "Tốc độ Bay (Safe)",
-   Range = {20, 200},
-   Increment = 10,
-   CurrentValue = 50,
+   Name = "Tốc độ Bay (Safe: 30-60)",
+   Range = {10, 100},
+   Increment = 5,
+   CurrentValue = 40,
    Callback = function(v) _G.TpSpeed = v end,
 })
 
 TpTab:CreateButton({
-   Name = "Teleport (Tween)",
+   Name = "Bay tới Địch (Lưu vị trí cũ)",
    Callback = function()
       if SelectedPlayer then
          local p = game.Players:FindFirstChild(SelectedPlayer)
          if p and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
-            local hrp = game.Players.LocalPlayer.Character.HumanoidRootPart
+            local char = game.Players.LocalPlayer.Character
+            local hrp = char.HumanoidRootPart
+            local hum = char:FindFirstChildOfClass("Humanoid")
+            
+            OldPosition = hrp.CFrame -- Lưu lại chỗ cũ
             local target = p.Character.HumanoidRootPart
             local dist = (hrp.Position - target.Position).Magnitude
             
-            -- Fix Anti: Bay từ từ thay vì nhảy vọt
-            game:GetService("TweenService"):Create(hrp, TweenInfo.new(dist/_G.TpSpeed, Enum.EasingStyle.Linear), {
+            if CurrentTween then CurrentTween:Cancel() end
+            
+            -- Chống giật: Tắt vật lý nhân vật khi bay
+            hum.PlatformStand = true 
+            
+            CurrentTween = game:GetService("TweenService"):Create(hrp, TweenInfo.new(dist/_G.TpSpeed, Enum.EasingStyle.Linear), {
                CFrame = target.CFrame * CFrame.new(0, 0, 3)
-            }):Play()
+            })
+            CurrentTween:Play()
+            
+            task.spawn(function()
+               while CurrentTween and CurrentTween.PlaybackState == Enum.PlaybackState.Playing do
+                  hrp.Velocity = Vector3.new(0, 0, 0) -- Reset vận tốc liên tục
+                  task.wait()
+               end
+               hum.PlatformStand = false -- Trả lại trạng thái cũ khi tới nơi
+            end)
+            
+            Rayfield:Notify({Title = "The Ngoc Hub", Content = "Đang bay... Chống giật đã bật!", Duration = 2})
          end
+      end
+   end,
+})
+
+TpTab:CreateButton({
+   Name = "Biến về chỗ cũ (Flash)",
+   Callback = function()
+      if OldPosition then
+         if CurrentTween then CurrentTween:Cancel() end
+         local hrp = game.Players.LocalPlayer.Character.HumanoidRootPart
+         hrp.CFrame = OldPosition
+         game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid").PlatformStand = false
+         Rayfield:Notify({Title = "The Ngoc Hub", Content = "Đã quay về vị trí an toàn!", Duration = 2})
+      else
+         Rayfield:Notify({Title = "Lỗi", Content = "Chưa có vị trí cũ để quay về!", Duration = 2})
+      end
+   end,
+})
+
+TpTab:CreateButton({
+   Name = "Dừng bay khẩn cấp",
+   Callback = function()
+      if CurrentTween then 
+         CurrentTween:Cancel() 
+         game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid").PlatformStand = false
       end
    end,
 })
