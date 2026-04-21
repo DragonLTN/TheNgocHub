@@ -123,44 +123,33 @@ CombatTab:CreateToggle({
    Callback = function(Value)
       _G.HitboxEnabled = Value
       task.spawn(function()
-         while _G.HitboxEnabled do
-            for _, p in pairs(game.Players:GetPlayers()) do
-               if p ~= game.Players.LocalPlayer and p.Character and p.Character:FindFirstChild("Head") then
-                  local h = p.Character.Head
-                  h.Size = Vector3.new(_G.HeadSize, _G.HeadSize, _G.HeadSize)
-                  h.Transparency = 0.7
-                  h.CanCollide = false
-                  
-                  if not h:FindFirstChild("Glow") then
-                     local high = Instance.new("Highlight", h)
-                     high.Name = "Glow"
-                     high.FillColor = Color3.new(1, 0, 0)
-                     high.FillTransparency = 0.5
-                     high.OutlineColor = Color3.new(1, 1, 1)
-                     high.OutlineTransparency = 0
-                     high.Adornee = h
-                  end
-               end
+   while _G.HitboxEnabled do
+      for _, p in pairs(game.Players:GetPlayers()) do
+         if p ~= game.Players.LocalPlayer and p.Character and p.Character:FindFirstChild("Head") then
+            local h = p.Character.Head
+            
+            -- FIX FREEZE TẠI ĐÂY:
+            h.Size = Vector3.new(_G.HeadSize, _G.HeadSize, _G.HeadSize)
+            h.Transparency = 0.7
+            h.CanCollide = false -- Quan trọng: Tắt va chạm để không bị kẹt vào đất/tường
+            h.Massless = true    -- Làm cái đầu không có trọng lượng để không kéo sập nhân vật
+            
+            -- Đảm bảo đối phương không bị đứng hình do lỗi vật lý
+            if h.Anchored == true then 
+               h.Anchored = false 
             end
-            task.wait(0.5)
-         end
-         if not _G.HitboxEnabled then
-            for _, p in pairs(game.Players:GetPlayers()) do
-               if p.Character and p.Character:FindFirstChild("Head") then
-                  p.Character.Head.Size = Vector3.new(1.2, 1.2, 1.2)
-                  p.Character.Head.Transparency = 0
-                  if p.Character.Head:FindFirstChild("Glow") then p.Character.Head.Glow:Destroy() end
-               end
+            
+            if not h:FindFirstChild("Glow") then
+               local high = Instance.new("Highlight", h)
+               high.Name = "Glow"
+               high.FillColor = Color3.new(1, 0, 0)
+               high.FillTransparency = 0.5
+               high.OutlineColor = Color3.new(1, 1, 1)
+               high.OutlineTransparency = 0
+               high.Adornee = h
             end
          end
-      end)
-   end,
-})
-
-CombatTab:CreateSlider({
-   Name = "Hitbox Size",
-   Range = {1, 50},
-   Increment = 0.5,
-   CurrentValue = 5,
-   Callback = function(v) _G.HeadSize = v end,
-})
+      end
+      task.wait(0.5)
+   end
+end)
