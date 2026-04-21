@@ -108,11 +108,14 @@ EspTab:CreateToggle({
             end
             task.wait(0.2)
          end
+         for _, obj in pairs(workspace:GetChildren()) do
+            if obj:FindFirstChild("NpcTracker") then obj.NpcTracker:Destroy() end
+         end
       end)
    end,
 })
 
--- ================= TAB 2: COMBAT (HITBOX GLOW) =================
+-- ================= TAB 2: COMBAT (HITBOX GLOW - FIXED FREEZE) =================
 local CombatTab = Window:CreateTab("Combat", 4483362458)
 _G.HeadSize = 5
 _G.HitboxEnabled = false
@@ -123,33 +126,53 @@ CombatTab:CreateToggle({
    Callback = function(Value)
       _G.HitboxEnabled = Value
       task.spawn(function()
-   while _G.HitboxEnabled do
-      for _, p in pairs(game.Players:GetPlayers()) do
-         if p ~= game.Players.LocalPlayer and p.Character and p.Character:FindFirstChild("Head") then
-            local h = p.Character.Head
-            
-            -- FIX FREEZE TẠI ĐÂY:
-            h.Size = Vector3.new(_G.HeadSize, _G.HeadSize, _G.HeadSize)
-            h.Transparency = 0.7
-            h.CanCollide = false -- Quan trọng: Tắt va chạm để không bị kẹt vào đất/tường
-            h.Massless = true    -- Làm cái đầu không có trọng lượng để không kéo sập nhân vật
-            
-            -- Đảm bảo đối phương không bị đứng hình do lỗi vật lý
-            if h.Anchored == true then 
-               h.Anchored = false 
+         while _G.HitboxEnabled do
+            for _, p in pairs(game.Players:GetPlayers()) do
+               if p ~= game.Players.LocalPlayer and p.Character and p.Character:FindFirstChild("Head") then
+                  local h = p.Character.Head
+                  
+                  -- Cấu hình Hitbox tránh gây Freeze
+                  h.Size = Vector3.new(_G.HeadSize, _G.HeadSize, _G.HeadSize)
+                  h.Transparency = 0.7
+                  h.CanCollide = false -- Tắt va chạm để không kẹt vào địa hình
+                  h.Massless = true    -- Tắt trọng lượng để không đè nặng nhân vật
+                  h.Anchored = false   -- Đảm bảo không bị neo cứng một chỗ
+                  
+                  -- Thêm Highlight Glow
+                  if not h:FindFirstChild("Glow") then
+                     local high = Instance.new("Highlight", h)
+                     high.Name = "Glow"
+                     high.FillColor = Color3.new(1, 0, 0)
+                     high.FillTransparency = 0.5
+                     high.OutlineColor = Color3.new(1, 1, 1)
+                     high.OutlineTransparency = 0
+                     high.Adornee = h
+                  end
+               end
             end
-            
-            if not h:FindFirstChild("Glow") then
-               local high = Instance.new("Highlight", h)
-               high.Name = "Glow"
-               high.FillColor = Color3.new(1, 0, 0)
-               high.FillTransparency = 0.5
-               high.OutlineColor = Color3.new(1, 1, 1)
-               high.OutlineTransparency = 0
-               high.Adornee = h
+            task.wait(0.5)
+         end
+         -- Trả lời trạng thái gốc khi tắt
+         if not _G.HitboxEnabled then
+            for _, p in pairs(game.Players:GetPlayers()) do
+               if p.Character and p.Character:FindFirstChild("Head") then
+                  local h = p.Character.Head
+                  h.Size = Vector3.new(1.2, 1.2, 1.2)
+                  h.Transparency = 0
+                  h.CanCollide = true
+                  h.Massless = false
+                  if h:FindFirstChild("Glow") then h.Glow:Destroy() end
+               end
             end
          end
-      end
-      task.wait(0.5)
-   end
-end)
+      end)
+   end,
+})
+
+CombatTab:CreateSlider({
+   Name = "Hitbox Size",
+   Range = {1, 15},
+   Increment = 0.5,
+   CurrentValue = 5,
+   Callback = function(v) _G.HeadSize = v end,
+})
