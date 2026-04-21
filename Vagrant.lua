@@ -27,7 +27,6 @@ EspTab:CreateToggle({
                   local hum = char:FindFirstChildOfClass("Humanoid")
                   
                   if root and hum then
-                     -- QUÉT VŨ KHÍ CHÍNH XÁC (FIX HOLDING)
                      local holding = "None"
                      for _, v in pairs(char:GetChildren()) do
                         if v:IsA("Tool") then 
@@ -63,7 +62,6 @@ EspTab:CreateToggle({
             end
             game:GetService("RunService").RenderStepped:Wait()
          end
-         -- Dọn dẹp
          for _, p in pairs(game.Players:GetPlayers()) do
             if p.Character and p.Character:FindFirstChild("HumanoidRootPart") and p.Character.HumanoidRootPart:FindFirstChild("PlayerTracker") then
                p.Character.HumanoidRootPart.PlayerTracker:Destroy()
@@ -108,14 +106,11 @@ EspTab:CreateToggle({
             end
             task.wait(0.2)
          end
-         for _, obj in pairs(workspace:GetChildren()) do
-            if obj:FindFirstChild("NpcTracker") then obj.NpcTracker:Destroy() end
-         end
       end)
    end,
 })
 
--- ================= TAB 2: COMBAT (HITBOX GLOW - FIXED FREEZE) =================
+-- ================= TAB 2: COMBAT (HITBOX) =================
 local CombatTab = Window:CreateTab("Combat", 4483362458)
 _G.HeadSize = 5
 _G.HitboxEnabled = false
@@ -130,15 +125,11 @@ CombatTab:CreateToggle({
             for _, p in pairs(game.Players:GetPlayers()) do
                if p ~= game.Players.LocalPlayer and p.Character and p.Character:FindFirstChild("Head") then
                   local h = p.Character.Head
-                  
-                  -- Cấu hình Hitbox tránh gây Freeze
                   h.Size = Vector3.new(_G.HeadSize, _G.HeadSize, _G.HeadSize)
                   h.Transparency = 0.7
-                  h.CanCollide = false -- Tắt va chạm để không kẹt vào địa hình
-                  h.Massless = true    -- Tắt trọng lượng để không đè nặng nhân vật
-                  h.Anchored = false   -- Đảm bảo không bị neo cứng một chỗ
+                  h.CanCollide = false
+                  h.Massless = true -- Chống đứng hình/nặng nề
                   
-                  -- Thêm Highlight Glow
                   if not h:FindFirstChild("Glow") then
                      local high = Instance.new("Highlight", h)
                      high.Name = "Glow"
@@ -146,24 +137,10 @@ CombatTab:CreateToggle({
                      high.FillTransparency = 0.5
                      high.OutlineColor = Color3.new(1, 1, 1)
                      high.OutlineTransparency = 0
-                     high.Adornee = h
                   end
                end
             end
             task.wait(0.5)
-         end
-         -- Trả lời trạng thái gốc khi tắt
-         if not _G.HitboxEnabled then
-            for _, p in pairs(game.Players:GetPlayers()) do
-               if p.Character and p.Character:FindFirstChild("Head") then
-                  local h = p.Character.Head
-                  h.Size = Vector3.new(1.2, 1.2, 1.2)
-                  h.Transparency = 0
-                  h.CanCollide = true
-                  h.Massless = false
-                  if h:FindFirstChild("Glow") then h.Glow:Destroy() end
-               end
-            end
          end
       end)
    end,
@@ -175,4 +152,57 @@ CombatTab:CreateSlider({
    Increment = 0.5,
    CurrentValue = 5,
    Callback = function(v) _G.HeadSize = v end,
+})
+
+-- ================= TAB 3: TELEPORT (FIX ANTI) =================
+local TpTab = Window:CreateTab("Teleport", 4483362458)
+
+local SelectedPlayer = nil
+_G.TpSpeed = 50
+
+local PlayerDropdown = TpTab:CreateDropdown({
+   Name = "Chọn Người Chơi",
+   Options = {},
+   CurrentOption = "",
+   Callback = function(Option)
+      SelectedPlayer = Option[1]
+   end,
+})
+
+TpTab:CreateButton({
+   Name = "Làm mới danh sách",
+   Callback = function()
+      local pList = {}
+      for _, v in pairs(game.Players:GetPlayers()) do
+         if v ~= game.Players.LocalPlayer then table.insert(pList, v.Name) end
+      end
+      PlayerDropdown:Refresh(pList)
+   end,
+})
+
+TpTab:CreateSlider({
+   Name = "Tốc độ Bay (Safe)",
+   Range = {20, 200},
+   Increment = 10,
+   CurrentValue = 50,
+   Callback = function(v) _G.TpSpeed = v end,
+})
+
+TpTab:CreateButton({
+   Name = "Teleport (Tween)",
+   Callback = function()
+      if SelectedPlayer then
+         local p = game.Players:FindFirstChild(SelectedPlayer)
+         if p and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+            local hrp = game.Players.LocalPlayer.Character.HumanoidRootPart
+            local target = p.Character.HumanoidRootPart
+            local dist = (hrp.Position - target.Position).Magnitude
+            
+            -- Fix Anti: Bay từ từ thay vì nhảy vọt
+            game:GetService("TweenService"):Create(hrp, TweenInfo.new(dist/_G.TpSpeed, Enum.EasingStyle.Linear), {
+               CFrame = target.CFrame * CFrame.new(0, 0, 3)
+            }):Play()
+         end
+      end
+   end,
 })
