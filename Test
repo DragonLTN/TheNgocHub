@@ -2,7 +2,7 @@ local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({
    Name = "The Ngoc Hub | Hitbox Manager",
-   LoadingTitle = "Đang tải dữ liệu...",
+   LoadingTitle = "Đang khởi tạo hệ thống...",
    LoadingSubtitle = "by The Ngoc",
    ConfigurationSaving = {
       Enabled = true,
@@ -11,18 +11,18 @@ local Window = Rayfield:CreateWindow({
    }
 })
 
--- Biến lưu trạng thái
+-- Biến lưu trạng thái hệ thống
 local _G = {
     HitboxSize = 10,
     HitboxEnabled = false,
-    HitboxTransparency = 0.7
+    HitboxTransparency = 0.5 -- Mặc định 0.5 để nhìn thấy được khối part
 }
 
-local MainTab = Window:CreateTab("Tính Năng Chính", 4483362458) -- Icon ID
+local MainTab = Window:CreateTab("Cài Đặt", 4483362458)
 
--- Toggle Bật/Tắt
-local HitboxToggle = MainTab:CreateToggle({
-   Name = "Bật Tăng Hitbox Quái",
+-- 1. Toggle Bật/Tắt
+MainTab:CreateToggle({
+   Name = "Kích hoạt Hitbox",
    CurrentValue = false,
    Flag = "HitboxToggle", 
    Callback = function(Value)
@@ -30,9 +30,9 @@ local HitboxToggle = MainTab:CreateToggle({
    end,
 })
 
--- Slider chỉnh kích thước
-local SizeSlider = MainTab:CreateSlider({
-   Name = "Kích Thước Hitbox",
+-- 2. Slider chỉnh kích thước (Tối đa 100)
+MainTab:CreateSlider({
+   Name = "Kích thước Hitbox",
    Range = {1, 100},
    Increment = 1,
    Suffix = " Studs",
@@ -43,45 +43,61 @@ local SizeSlider = MainTab:CreateSlider({
    end,
 })
 
--- Slider chỉnh độ trong suốt
-local TransparencySlider = MainTab:CreateSlider({
-   Name = "Độ Trong Suốt",
+-- 3. Slider chỉnh độ trong suốt (0 = Hiện rõ, 1 = Tàng hình)
+MainTab:CreateSlider({
+   Name = "Độ trong suốt",
    Range = {0, 1},
    Increment = 0.1,
    Suffix = "",
-   CurrentValue = 0.7,
+   CurrentValue = 0.5,
    Flag = "HitboxTrans", 
    Callback = function(Value)
       _G.HitboxTransparency = Value
    end,
 })
 
--- Vòng lặp xử lý (Loop)
+-- Vòng lặp xử lý chính (Hợp nhất logic quét sâu và hiển thị)
 task.spawn(function()
     while task.wait(1) do
         if _G.HitboxEnabled then
-            -- Duyệt qua tất cả đối tượng trong Workspace
-            for _, v in pairs(game:GetService("Workspace"):GetChildren()) do
-                -- Kiểm tra nếu là quái (Thường có Humanoid và không phải người chơi)
-                if v:IsA("Model") and v:FindFirstChild("Humanoid") and v.Name ~= game.Players.LocalPlayer.Name then
-                    local hrp = v:FindFirstChild("HumanoidRootPart")
-                    if hrp then
-                        hrp.Size = Vector3.new(_G.HitboxSize, _G.HitboxSize, _G.HitboxSize)
-                        hrp.Transparency = _G.HitboxTransparency
-                        hrp.CanCollide = false
-                        -- Thêm màu đỏ cho dễ nhìn
-                        hrp.Color = Color3.fromRGB(255, 0, 0) 
+            -- Sử dụng GetDescendants để tìm quái nằm sâu trong các Folder/Sub-folder
+            for _, v in pairs(game:GetService("Workspace"):GetDescendants()) do
+                if v:IsA("Part") and v.Name == "HumanoidRootPart" then
+                    local model = v.Parent
+                    -- Kiểm tra nếu là Model có Humanoid và không phải bản thân người chơi
+                    if model:IsA("Model") and model:FindFirstChild("Humanoid") and model.Name ~= game.Players.LocalPlayer.Name then
+                        
+                        -- Cập nhật kích thước và hiển thị
+                        v.Size = Vector3.new(_G.HitboxSize, _G.HitboxSize, _G.HitboxSize)
+                        v.Transparency = _G.HitboxTransparency
+                        v.Color = Color3.fromRGB(255, 0, 0) -- Màu đỏ đặc trưng
+                        v.Material = Enum.Material.Neon    -- Phát sáng để dễ nhận diện
+                        v.CanCollide = false               -- Tránh lỗi kẹt nhân vật
+                        
+                        -- Tích hợp thêm Highlight để quái luôn có viền đỏ
+                        local highlight = model:FindFirstChild("HitboxHighlight")
+                        if not highlight then
+                            highlight = Instance.new("Highlight")
+                            highlight.Name = "HitboxHighlight"
+                            highlight.Parent = model
+                        end
+                        highlight.FillColor = Color3.fromRGB(255, 0, 0)
+                        highlight.FillAlpha = _G.HitboxTransparency
+                        highlight.Enabled = true
                     end
                 end
             end
         else
-            -- Reset về mặc định khi tắt
-            for _, v in pairs(game:GetService("Workspace"):GetChildren()) do
-                if v:IsA("Model") and v:FindFirstChild("Humanoid") and v.Name ~= game.Players.LocalPlayer.Name then
-                    local hrp = v:FindFirstChild("HumanoidRootPart")
-                    if hrp then
-                        hrp.Size = Vector3.new(2, 2, 1)
-                        hrp.Transparency = 1
+            -- Reset về trạng thái mặc định khi tắt Toggle
+            for _, v in pairs(game:GetService("Workspace"):GetDescendants()) do
+                if v:IsA("Part") and v.Name == "HumanoidRootPart" then
+                    local model = v.Parent
+                    if model:IsA("Model") and model:FindFirstChild("Humanoid") then
+                        v.Size = Vector3.new(2, 2, 1)
+                        v.Transparency = 1
+                        if model:FindFirstChild("HitboxHighlight") then
+                            model.HitboxHighlight:Destroy()
+                        end
                     end
                 end
             end
@@ -90,14 +106,8 @@ task.spawn(function()
 end)
 
 Rayfield:Notify({
-   Title = "Thành công!",
-   Content = "Menu đã sẵn sàng hoạt động.",
+   Title = "Hoàn tất!",
+   Content = "Script đã hợp nhất và sẵn sàng chạy.",
    Duration = 3,
    Image = 4483362458,
-   Actions = { 
-      Ignore = {
-         Name = "Đóng",
-         Callback = function() end
-      },
-   },
 })
