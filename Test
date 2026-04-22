@@ -1,22 +1,32 @@
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({
-   Name = "The Ngoc Hub | Hitbox Fix",
-   LoadingTitle = "Đang cấu hình lại vật lý...",
+   Name = "The Ngoc Hub | Selective Hitbox",
+   LoadingTitle = "Đang thiết lập bộ lọc...",
    LoadingSubtitle = "by The Ngoc",
-   ConfigurationSaving = {Enabled = true, FolderName = "TheNgocHub", FileName = "ConfigFix"}
+   ConfigurationSaving = {Enabled = true, FolderName = "TheNgocHub", FileName = "ConfigV10"}
 })
 
 _G.HitboxSize = 20
 _G.HitboxEnabled = false
+_G.TargetName = "" -- Để trống sẽ quét tất cả, điền tên để lọc
 
-local MainTab = Window:CreateTab("Cài Đặt", 4483362458)
+local MainTab = Window:CreateTab("Chức Năng", 4483362458)
 
 MainTab:CreateToggle({
    Name = "Kích Hoạt Hitbox",
    CurrentValue = false,
    Flag = "HitboxToggle", 
    Callback = function(Value) _G.HitboxEnabled = Value end,
+})
+
+MainTab:CreateInput({
+   Name = "Tên Quái (Lọc mục tiêu)",
+   PlaceholderText = "Ví dụ: Zombie, Slime...",
+   RemoveTextAfterFocusLost = false,
+   Callback = function(Text)
+      _G.TargetName = Text
+   end,
 })
 
 MainTab:CreateSlider({
@@ -28,34 +38,35 @@ MainTab:CreateSlider({
    Callback = function(Value) _G.HitboxSize = Value end,
 })
 
--- Logic quét và ép dính mọi bộ phận
+-- Logic quét có chọn lọc
 task.spawn(function()
     while task.wait(0.5) do
         if _G.HitboxEnabled then
             for _, model in pairs(game:GetService("Workspace"):GetDescendants()) do
-                -- Lọc đúng sinh vật có thanh máu (Humanoid) và không phải là bạn
-                if model:IsA("Model") and model:FindFirstChildOfClass("Humanoid") and model.Name ~= game.Players.LocalPlayer.Name then
+                -- ĐIỀU KIỆN LỌC CẢI TIẾN:
+                if model:IsA("Model") and model:FindFirstChildOfClass("Humanoid") then
                     
-                    -- Duyệt tất cả bộ phận trong cơ thể quái
-                    for _, part in pairs(model:GetChildren()) do
-                        if part:IsA("BasePart") then
-                            -- Ép kích thước vật lý
-                            part.Size = Vector3.new(_G.HitboxSize, _G.HitboxSize, _G.HitboxSize)
-                            part.Transparency = 0.8 -- Làm mờ để không che tầm nhìn
-                            part.CanCollide = false
-                            part.CanTouch = true
-                            
-                            -- Hiển thị khung dây đỏ (SelectionBox) để biết chính xác hitbox ở đâu
-                            local sBox = part:FindFirstChild("MyHitbox")
-                            if not sBox then
-                                sBox = Instance.new("SelectionBox")
-                                sBox.Name = "MyHitbox"
-                                sBox.Parent = part
-                                sBox.Adornee = part
-                                sBox.Color3 = Color3.fromRGB(255, 0, 0)
-                                sBox.LineThickness = 0.1
+                    -- Bỏ qua bản thân người chơi
+                    if model.Name == game.Players.LocalPlayer.Name then continue end
+                    
+                    -- KIỂM TRA TÊN: Chỉ làm to nếu tên khớp với ô nhập (hoặc nếu ô nhập trống)
+                    local isMatch = (_G.TargetName == "" or string.find(string.lower(model.Name), string.lower(_G.TargetName)))
+                    
+                    if isMatch then
+                        for _, part in pairs(model:GetChildren()) do
+                            if part:IsA("BasePart") then
+                                part.Size = Vector3.new(_G.HitboxSize, _G.HitboxSize, _G.HitboxSize)
+                                part.Transparency = 0.8
+                                part.CanCollide = false
+                                part.CanTouch = true
+                                
+                                if not part:FindFirstChild("SelectionBox") then
+                                    local sBox = Instance.new("SelectionBox", part)
+                                    sBox.Adornee = part
+                                    sBox.Color3 = Color3.fromRGB(255, 0, 0)
+                                    sBox.LineThickness = 0.05
+                                end
                             end
-                            sBox.Visible = true
                         end
                     end
                 end
@@ -63,9 +74,3 @@ task.spawn(function()
         end
     end
 end)
-
-Rayfield:Notify({
-   Title = "Hoàn Tất",
-   Content = "Hãy bật Toggle và tăng Size lên 30 để thấy khung đỏ bao quanh quái!",
-   Duration = 5,
-})
