@@ -143,7 +143,7 @@ CombatTab:CreateToggle({
 
 CombatTab:CreateSlider({
    Name = "Hitbox Size",
-   Range = {1, 200}, -- Chỉnh lại 20 cho hợp lý, 1000 sẽ làm crash vật lý game
+   Range = {1, 1000}, -- Chỉnh lại 20 cho hợp lý, 1000 sẽ làm crash vật lý game
    Increment = 0.5,
    CurrentValue = 5,
    Callback = function(v) 
