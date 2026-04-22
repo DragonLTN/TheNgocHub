@@ -1,27 +1,26 @@
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({
-   Name = "The Ngoc Hub | Hitbox v8",
-   LoadingTitle = "Đang cấu hình Hitbox ảo...",
+   Name = "The Ngoc Hub | Hitbox Fix",
+   LoadingTitle = "Đang cấu hình lại vật lý...",
    LoadingSubtitle = "by The Ngoc",
-   ConfigurationSaving = {Enabled = true, FolderName = "TheNgocHub", FileName = "ConfigV8"}
+   ConfigurationSaving = {Enabled = true, FolderName = "TheNgocHub", FileName = "ConfigFix"}
 })
 
 _G.HitboxSize = 20
 _G.HitboxEnabled = false
-_G.Transparency = 0.6
 
-local MainTab = Window:CreateTab("Chức Năng", 4483362458)
+local MainTab = Window:CreateTab("Cài Đặt", 4483362458)
 
 MainTab:CreateToggle({
-   Name = "Bật Hitbox Ảo (Đánh Xa)",
+   Name = "Kích Hoạt Hitbox",
    CurrentValue = false,
    Flag = "HitboxToggle", 
    Callback = function(Value) _G.HitboxEnabled = Value end,
 })
 
 MainTab:CreateSlider({
-   Name = "Phạm Vi Đánh",
+   Name = "Kích Thước",
    Range = {1, 100},
    Increment = 1,
    CurrentValue = 20,
@@ -29,56 +28,44 @@ MainTab:CreateSlider({
    Callback = function(Value) _G.HitboxSize = Value end,
 })
 
--- Hàm tạo Hitbox mới gắn vào quái
-local function CreateGhostHitbox(model)
-    if model:FindFirstChild("GhostHitbox") then return end
-    
-    local root = model:FindFirstChild("HumanoidRootPart") or model:FindFirstChild("Torso") or model:FindFirstChild("Head")
-    if not root then return end
-
-    local ghost = Instance.new("Part")
-    ghost.Name = "GhostHitbox"
-    ghost.Parent = model
-    ghost.Shape = Enum.PartType.Block
-    ghost.Color = Color3.fromRGB(255, 0, 0)
-    ghost.Material = Enum.Material.Neon
-    ghost.CanCollide = false
-    ghost.CanTouch = true
-    ghost.Anchored = true -- Khóa vị trí để mình tự điều khiển bằng script
-    
-    -- Vòng lặp dính khối này vào quái mỗi khung hình
-    task.spawn(function()
-        while model.Parent and _G.HitboxEnabled do
-            if root then
-                ghost.CFrame = root.CFrame
-                ghost.Size = Vector3.new(_G.HitboxSize, _G.HitboxSize, _G.HitboxSize)
-                ghost.Transparency = _G.Transparency
-            else
-                break
-            end
-            task.wait()
-        end
-        ghost:Destroy()
-    end)
-end
-
--- Vòng lặp quét quái liên tục
+-- Logic quét và ép dính mọi bộ phận
 task.spawn(function()
-    while task.wait(1) do
+    while task.wait(0.5) do
         if _G.HitboxEnabled then
-            for _, v in pairs(game:GetService("Workspace"):GetDescendants()) do
-                if v:IsA("Model") and v:FindFirstChildOfClass("Humanoid") and v.Name ~= game.Players.LocalPlayer.Name then
-                    CreateGhostHitbox(v)
+            for _, model in pairs(game:GetService("Workspace"):GetDescendants()) do
+                -- Lọc đúng sinh vật có thanh máu (Humanoid) và không phải là bạn
+                if model:IsA("Model") and model:FindFirstChildOfClass("Humanoid") and model.Name ~= game.Players.LocalPlayer.Name then
                     
-                    -- Luôn bật Highlight để không bị mất dấu
-                    if not v:FindFirstChild("HitboxHighlight") then
-                        local hl = Instance.new("Highlight", v)
-                        hl.Name = "HitboxHighlight"
-                        hl.FillColor = Color3.fromRGB(255, 0, 0)
-                        hl.FillAlpha = 0.5
+                    -- Duyệt tất cả bộ phận trong cơ thể quái
+                    for _, part in pairs(model:GetChildren()) do
+                        if part:IsA("BasePart") then
+                            -- Ép kích thước vật lý
+                            part.Size = Vector3.new(_G.HitboxSize, _G.HitboxSize, _G.HitboxSize)
+                            part.Transparency = 0.8 -- Làm mờ để không che tầm nhìn
+                            part.CanCollide = false
+                            part.CanTouch = true
+                            
+                            -- Hiển thị khung dây đỏ (SelectionBox) để biết chính xác hitbox ở đâu
+                            local sBox = part:FindFirstChild("MyHitbox")
+                            if not sBox then
+                                sBox = Instance.new("SelectionBox")
+                                sBox.Name = "MyHitbox"
+                                sBox.Parent = part
+                                sBox.Adornee = part
+                                sBox.Color3 = Color3.fromRGB(255, 0, 0)
+                                sBox.LineThickness = 0.1
+                            end
+                            sBox.Visible = true
+                        end
                     end
                 end
             end
         end
     end
 end)
+
+Rayfield:Notify({
+   Title = "Hoàn Tất",
+   Content = "Hãy bật Toggle và tăng Size lên 30 để thấy khung đỏ bao quanh quái!",
+   Duration = 5,
+})
