@@ -18,48 +18,62 @@ EspTab:CreateToggle({
       _G.MasterESP = Value
       task.spawn(function()
          while _G.MasterESP do
-            for _, player in pairs(game.Players:GetPlayers()) do
-               if player ~= game.Players.LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-                  local char = player.Character
-                  local root = char.HumanoidRootPart
-                  local hum = char:FindFirstChildOfClass("Humanoid")
-                  
-                  if root and hum then
-                     local holding = "None"
-                     for _, v in pairs(char:GetChildren()) do
-                        if v:IsA("Tool") then 
-                           holding = v.Name 
-                           break
-                        elseif v:IsA("Model") and not v:IsA("Accessory") and v.Name ~= "HumanoidRootPart" then
-                           if v:FindFirstChild("Handle") or v:FindFirstChild("Muzzle") or v:FindFirstChild("Part") then
-                              holding = v.Name 
-                              break
+            -- Kiểm tra nếu bản thân còn sống
+            local localChar = game.Players.LocalPlayer.Character
+            if localChar and localChar:FindFirstChild("Humanoid") and localChar.Humanoid.Health > 0 then
+               for _, player in pairs(game.Players:GetPlayers()) do
+                  if player ~= game.Players.LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                     local char = player.Character
+                     local root = char.HumanoidRootPart
+                     local hum = char:FindFirstChildOfClass("Humanoid")
+                     
+                     -- Chỉ hiện ESP nếu đối phương còn sống
+                     if hum and hum.Health > 0 then
+                        local holding = "None"
+                        for _, v in pairs(char:GetChildren()) do
+                           if v:IsA("Tool") then holding = v.Name break
+                           elseif v:IsA("Model") and not v:IsA("Accessory") and v.Name ~= "HumanoidRootPart" then
+                              if v:FindFirstChild("Handle") or v:FindFirstChild("Muzzle") or v:FindFirstChild("Part") then
+                                 holding = v.Name break
+                              end
                            end
                         end
-                     end
 
-                     local billboard = root:FindFirstChild("PlayerTracker") or Instance.new("BillboardGui", root)
-                     billboard.Name = "PlayerTracker"
-                     billboard.AlwaysOnTop = true
-                     billboard.Size = UDim2.new(0, 200, 0, 100)
-                     billboard.ExtentsOffset = Vector3.new(0, 3.5, 0)
-                     
-                     local label = billboard:FindFirstChild("L") or Instance.new("TextLabel", billboard)
-                     label.Name = "L"
-                     label.BackgroundTransparency = 1
-                     label.Size = UDim2.new(1, 0, 1, 0)
-                     label.Font = Enum.Font.SourceSansBold
-                     label.TextSize = 14
-                     label.TextColor3 = Color3.new(1, 1, 1)
-                     label.TextStrokeTransparency = 0
-                     
-                     local dist = math.floor((game.Players.LocalPlayer.Character.HumanoidRootPart.Position - root.Position).Magnitude)
-                     label.Text = string.format("%s\nHP: %d\nItem: %s\n[%d m]", player.Name, math.floor(hum.Health), holding, dist)
+                        local billboard = root:FindFirstChild("PlayerTracker") or Instance.new("BillboardGui", root)
+                        billboard.Name = "PlayerTracker"
+                        billboard.AlwaysOnTop = true
+                        billboard.Size = UDim2.new(0, 200, 0, 100)
+                        billboard.ExtentsOffset = Vector3.new(0, 3.5, 0)
+                        billboard.Enabled = true
+                        
+                        local label = billboard:FindFirstChild("L") or Instance.new("TextLabel", billboard)
+                        label.Name = "L"
+                        label.BackgroundTransparency = 1
+                        label.Size = UDim2.new(1, 0, 1, 0)
+                        label.Font = Enum.Font.SourceSansBold
+                        label.TextSize = 14
+                        label.TextColor3 = Color3.new(1, 1, 1)
+                        label.TextStrokeTransparency = 0
+                        
+                        local dist = math.floor((localChar.HumanoidRootPart.Position - root.Position).Magnitude)
+                        label.Text = string.format("%s\nHP: %d\nItem: %s\n[%d m]", player.Name, math.floor(hum.Health), holding, dist)
+                     else
+                        -- Ẩn ESP nếu đối phương chết
+                        if root:FindFirstChild("PlayerTracker") then root.PlayerTracker.Enabled = false end
+                     end
+                  end
+               end
+            else
+               -- Tạm ẩn toàn bộ ESP khi mình chết
+               for _, p in pairs(game.Players:GetPlayers()) do
+                  if p.Character and p.Character:FindFirstChild("HumanoidRootPart") and p.Character.HumanoidRootPart:FindFirstChild("PlayerTracker") then
+                     p.Character.HumanoidRootPart.PlayerTracker.Enabled = false
                   end
                end
             end
             task.wait(0.1)
          end
+         -- Cleanup khi tắt toggle
          for _, p in pairs(game.Players:GetPlayers()) do
             if p.Character and p.Character:FindFirstChild("HumanoidRootPart") and p.Character.HumanoidRootPart:FindFirstChild("PlayerTracker") then
                p.Character.HumanoidRootPart.PlayerTracker:Destroy()
@@ -74,7 +88,6 @@ local CombatTab = Window:CreateTab("Combat", 4483362458)
 _G.HeadSize = 5
 _G.HitboxEnabled = false
 
--- Hàm cập nhật hitbox nhanh
 local function UpdateHitbox()
     if not _G.HitboxEnabled then return end
     for _, p in pairs(game.Players:GetPlayers()) do
@@ -82,7 +95,11 @@ local function UpdateHitbox()
             local h = p.Character.Head
             h.Size = Vector3.new(_G.HeadSize, _G.HeadSize, _G.HeadSize)
             h.Transparency = 0.7
-            h.CanCollide = true
+            
+            -- FIX XUYÊN HITBOX:
+            -- CanCollide = false giúp bạn đi xuyên qua đối thủ
+            -- Massless = true giúp đối thủ không bị ngã do đầu quá nặng
+            h.CanCollide = false 
             h.Massless = true
             
             if not h:FindFirstChild("Glow") then
@@ -92,6 +109,7 @@ local function UpdateHitbox()
                 high.FillTransparency = 0.5
                 high.OutlineColor = Color3.new(1, 1, 1)
                 high.OutlineTransparency = 0
+                high.Adornee = h
             end
         end
     end
@@ -106,16 +124,16 @@ CombatTab:CreateToggle({
          task.spawn(function()
             while _G.HitboxEnabled do
                UpdateHitbox()
-               task.wait(1) -- Quét định kỳ cho người chơi mới vào server
+               task.wait(1)
             end
          end)
       else
-         -- Reset khi tắt
          for _, p in pairs(game.Players:GetPlayers()) do
             if p.Character and p.Character:FindFirstChild("Head") then
                local h = p.Character.Head
                h.Size = Vector3.new(1.2, 1.2, 1.2)
                h.Transparency = 0
+               h.CanCollide = true -- Trả lại vật lý bình thường
                if h:FindFirstChild("Glow") then h.Glow:Destroy() end
             end
          end
@@ -125,14 +143,11 @@ CombatTab:CreateToggle({
 
 CombatTab:CreateSlider({
    Name = "Hitbox Size",
-   Range = {1, 1000},
+   Range = {1, 200}, -- Chỉnh lại 20 cho hợp lý, 1000 sẽ làm crash vật lý game
    Increment = 0.5,
    CurrentValue = 5,
    Callback = function(v) 
       _G.HeadSize = v 
-      -- Cập nhật ngay lập tức khi kéo slider
-      if _G.HitboxEnabled then
-          UpdateHitbox()
-      end
+      if _G.HitboxEnabled then UpdateHitbox() end
    end,
 })
