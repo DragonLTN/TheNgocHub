@@ -60,7 +60,6 @@ EspTab:CreateToggle({
             end
             task.wait(0.1)
          end
-         -- Cleanup
          for _, p in pairs(game.Players:GetPlayers()) do
             if p.Character and p.Character:FindFirstChild("HumanoidRootPart") and p.Character.HumanoidRootPart:FindFirstChild("PlayerTracker") then
                p.Character.HumanoidRootPart.PlayerTracker:Destroy()
@@ -70,44 +69,47 @@ EspTab:CreateToggle({
    end,
 })
 
--- ================= TAB 2: COMBAT (FIXED FREEZE) =================
+-- ================= TAB 2: COMBAT =================
 local CombatTab = Window:CreateTab("Combat", 4483362458)
 _G.HeadSize = 5
 _G.HitboxEnabled = false
+
+-- Hàm cập nhật hitbox nhanh
+local function UpdateHitbox()
+    if not _G.HitboxEnabled then return end
+    for _, p in pairs(game.Players:GetPlayers()) do
+        if p ~= game.Players.LocalPlayer and p.Character and p.Character:FindFirstChild("Head") then
+            local h = p.Character.Head
+            h.Size = Vector3.new(_G.HeadSize, _G.HeadSize, _G.HeadSize)
+            h.Transparency = 0.7
+            h.CanCollide = true
+            h.Massless = true
+            
+            if not h:FindFirstChild("Glow") then
+                local high = Instance.new("Highlight", h)
+                high.Name = "Glow"
+                high.FillColor = Color3.new(1, 0, 0)
+                high.FillTransparency = 0.5
+                high.OutlineColor = Color3.new(1, 1, 1)
+                high.OutlineTransparency = 0
+            end
+        end
+    end
+end
 
 CombatTab:CreateToggle({
    Name = "Hitbox Player",
    CurrentValue = false,
    Callback = function(Value)
       _G.HitboxEnabled = Value
-      task.spawn(function()
-         while _G.HitboxEnabled do
-            for _, p in pairs(game.Players:GetPlayers()) do
-               if p ~= game.Players.LocalPlayer and p.Character and p.Character:FindFirstChild("Head") then
-                  local h = p.Character.Head
-                  
-                  -- Chỉ cập nhật nếu kích thước khác với mong muốn (tránh lag/freeze vật lý)
-                  if h.Size ~= Vector3.new(_G.HeadSize, _G.HeadSize, _G.HeadSize) then
-                     h.Size = Vector3.new(_G.HeadSize, _G.HeadSize, _G.HeadSize)
-                     h.Transparency = 0.7
-                     -- Giữ CanCollide mặc định hoặc không thay đổi liên tục để tránh freeze
-                     h.CanCollide = true 
-                     h.Massless = true -- Giúp nhân vật di chuyển nhẹ nhàng hơn khi đầu to
-                  end
-                  
-                  if not h:FindFirstChild("Glow") then
-                     local high = Instance.new("Highlight", h)
-                     high.Name = "Glow"
-                     high.FillColor = Color3.new(1, 0, 0)
-                     high.FillTransparency = 0.5
-                     high.OutlineColor = Color3.new(1, 1, 1)
-                     high.OutlineTransparency = 0
-                  end
-               end
+      if Value then
+         task.spawn(function()
+            while _G.HitboxEnabled do
+               UpdateHitbox()
+               task.wait(1) -- Quét định kỳ cho người chơi mới vào server
             end
-            task.wait(1) -- Tăng thời gian chờ để giảm tải cho CPU
-         end
-         
+         end)
+      else
          -- Reset khi tắt
          for _, p in pairs(game.Players:GetPlayers()) do
             if p.Character and p.Character:FindFirstChild("Head") then
@@ -117,7 +119,7 @@ CombatTab:CreateToggle({
                if h:FindFirstChild("Glow") then h.Glow:Destroy() end
             end
          end
-      end)
+      end
    end,
 })
 
@@ -128,5 +130,9 @@ CombatTab:CreateSlider({
    CurrentValue = 5,
    Callback = function(v) 
       _G.HeadSize = v 
+      -- Cập nhật ngay lập tức khi kéo slider
+      if _G.HitboxEnabled then
+          UpdateHitbox()
+      end
    end,
 })
