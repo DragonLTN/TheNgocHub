@@ -1,0 +1,136 @@
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+local Window = Rayfield:CreateWindow({
+   Name = "Noob Exterminators : TheNgocHub",
+   LoadingTitle = "Thx For Using",
+   LoadingSubtitle = "by DragonLTN",
+   ShowText = "Rayfield",
+   Theme = "Default",
+   ToggleUIKeybind = "K",
+   DisableRayfieldPrompts = false,
+   DisableBuildWarnings = false,
+   ConfigurationSaving = {
+      Enabled = true,
+      FolderName = nil,
+      FileName = "Big Hub"
+   },
+   Discord = {
+      Enabled = false,
+      Invite = "noinvitelink",
+      RememberJoins = true
+   },
+   KeySystem = false,
+   KeySettings = {
+      Title = "Untitled",
+      Subtitle = "Key System",
+      Note = "No method of obtaining the key is provided",
+      FileName = "Key",
+      SaveKey = true,
+      GrabKeyFromSite = false,
+      Key = {"Hello"}
+   }
+})
+
+local Tab = Window:CreateTab("Tab Example", 4483362458)
+local Section = Tab:CreateSection("Section Example")
+local Divider = Tab:CreateDivider()
+
+local function makeesp()
+    for _, noob in pairs(workspace.Bots:GetChildren()) do
+        if noob:IsA("Model") then
+            local hum = noob:FindFirstChild("Humanoid")
+            if hum then
+                local check = noob:FindFirstChild("Highlight")
+                if check then check:Destroy() end
+                local esp = Instance.new("Highlight")
+                esp.Parent = noob
+                if noob.Name == "Mini Noob" then
+                    esp.FillColor = Color3.new(1, 1, 0)
+                end
+            end
+        end
+    end
+end
+
+Tab:CreateButton({
+   Name = "noob ESP",
+   Callback = function()
+       makeesp()
+   end,
+})
+
+Tab:CreateSlider({
+   Name = "Walkspeed",
+   Range = {0, 100},
+   Increment = 1,
+   Suffix = "speed",
+   CurrentValue = 16,
+   Flag = "Slider1",
+   Callback = function(Value)
+       game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = Value
+   end,
+})
+
+Tab:CreateButton({
+   Name = "turn killaura on(PRESS ONCE AND IT WORKS)",
+   Callback = function()
+       local Players = game:GetService("Players")
+       local ReplicatedStorage = game:GetService("ReplicatedStorage")
+       local RunService = game:GetService("RunService")
+       local player = Players.LocalPlayer
+       local character = player.Character or player.CharacterAdded:Wait()
+       local meleeEvent = ReplicatedStorage:WaitForChild("Events"):WaitForChild("MeleeHit")
+       local RANGE = 15
+       local ATTACK_DELAY = 0.15
+
+       local function getClosestBot()
+           local botsFolder = workspace:FindFirstChild("Bots")
+           if not botsFolder then return nil end
+           local closestBot = nil
+           local shortestDist = RANGE
+           for _, bot in pairs(botsFolder:GetChildren()) do
+               local hrp = bot:FindFirstChild("HumanoidRootPart")
+               if hrp then
+                   local playerHRP = character:FindFirstChild("HumanoidRootPart")
+                   if playerHRP then
+                       local dist = (hrp.Position - playerHRP.Position).Magnitude
+                       if dist < shortestDist then
+                           shortestDist = dist
+                           closestBot = bot
+                       end
+                   end
+               end
+           end
+           return closestBot
+       end
+
+       local function attackBot(bot)
+           local targetHRP = bot:FindFirstChild("HumanoidRootPart")
+           if not targetHRP then return end
+           local args = {
+               workspace:WaitForChild("Bots"):WaitForChild(bot.Name):WaitForChild("HumanoidRootPart"),
+               game:GetService("Players").LocalPlayer.Character:WaitForChild("Wooden Bat"),
+               Vector3.new(-0.1702866107225418, -0.33161935210227966, -0.9279175996780396)
+           }
+           pcall(function()
+               meleeEvent:FireServer(unpack(args))
+           end)
+       end
+
+       local lastAttack = 0
+       RunService.Heartbeat:Connect(function()
+           if not character.Parent or not character:FindFirstChild("HumanoidRootPart") then
+               character = player.Character or player.CharacterAdded:Wait()
+               return
+           end
+           local now = tick()
+           if now - lastAttack >= ATTACK_DELAY then
+               local target = getClosestBot()
+               if target then
+                   attackBot(target)
+                   lastAttack = now
+               end
+           end
+       end)
+   end,
+})
