@@ -61,7 +61,7 @@ Tab:CreateButton({
 
 Tab:CreateSlider({
    Name = "Walkspeed",
-   Range = {0, 100},
+   Range = {0, 30},
    Increment = 1,
    Suffix = "speed",
    CurrentValue = 16,
