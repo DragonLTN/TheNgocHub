@@ -1,10 +1,9 @@
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({
-   Name = "TheNgocHub",
-   Icon = 0,
-   LoadingTitle = "Rayfield Interface Suite",
-   LoadingSubtitle = "by Sirius",
+   Name = "Noob Extetminators: The Ngoc Hub",
+       LoadingTitle = "Thx For Using",
+       LoadingSubtitle = "by DragonLTN",
    ShowText = "Rayfield",
    Theme = "Default",
    ToggleUIKeybind = "K",
