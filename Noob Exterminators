@@ -1,9 +1,10 @@
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({
-   Name = "Noob Extetminators: The Ngoc Hub",
-       LoadingTitle = "Thx For Using",
-       LoadingSubtitle = "by DragonLTN",
+   Name = "Rayfield Example Window",
+   Icon = 0,
+   LoadingTitle = "Rayfield Interface Suite",
+   LoadingSubtitle = "by Sirius",
    ShowText = "Rayfield",
    Theme = "Default",
    ToggleUIKeybind = "K",
@@ -61,7 +62,7 @@ Tab:CreateButton({
 
 Tab:CreateSlider({
    Name = "Walkspeed",
-   Range = {0, 30},
+   Range = {0, 100},
    Increment = 1,
    Suffix = "speed",
    CurrentValue = 16,
@@ -134,3 +135,9 @@ Tab:CreateButton({
        end)
    end,
 })
+
+
+
+      
+Comments
+5
