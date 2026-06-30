@@ -1,3 +1,5 @@
+_G.MaxRenderDistance = 1250
+
 if _G.SmartFPSBoosterExecuted then return end
 _G.SmartFPSBoosterExecuted = true
 
@@ -42,12 +44,14 @@ local function smartOptimize(v)
         if v:IsA("MeshPart") and not isImportant(v) then
             v.TextureID = ""
         end
-    elseif v:IsA("ParticleEmitter") or v:IsA("Smoke") or v:IsA("Fire") or v:IsA("Sparkles") or v:IsA("Trail") or v:IsA("Beam") then
+    elseif v:IsA("ParticleEmitter") or v:IsA("Smoke") or v:IsA("Fire") or v:IsA("Sparkles") or v:IsA("Trail") or v:IsA("Beam") or v:IsA("Clouds") then
         v:Destroy()
     elseif v:IsA("Decal") or v:IsA("Texture") then
         if v.Parent and not isImportant(v.Parent) then
             v:Destroy()
         end
+    elseif v:IsA("Atmosphere") or v:IsA("Sky") then
+        v:Destroy()
     end
 end
 
@@ -73,6 +77,10 @@ local function optimizeLighting()
     Lighting.GlobalShadows = false
     Lighting.Brightness = 1
     Lighting.ClockTime = 12
+    
+    Lighting.FogEnd = _G.MaxRenderDistance
+    Lighting.FogStart = _G.MaxRenderDistance - 100
+    
     for _, v in ipairs(Lighting:GetChildren()) do
         if v:IsA("BlurEffect") or v:IsA("SunRaysEffect") or v:IsA("BloomEffect") or v:IsA("DepthOfFieldEffect") then
             v:Destroy()
@@ -80,6 +88,17 @@ local function optimizeLighting()
     end
 end
 optimizeLighting()
+
+pcall(function()
+    local terrain = Workspace:FindFirstChildOfClass("Terrain")
+    if terrain then
+        terrain.WaterWaveSize = 0
+        terrain.WaterWaveSpeed = 0
+        terrain.WaterReflectance = 0
+        terrain.Decoration = false
+    end
+    Workspace.GlobalWind = Vector3.new(0, 0, 0)
+end)
 
 Lighting.ChildAdded:Connect(function(v)
     if v:IsA("BlurEffect") or v:IsA("SunRaysEffect") or v:IsA("BloomEffect") or v:IsA("DepthOfFieldEffect") then
@@ -100,13 +119,23 @@ task.spawn(function()
                     local pRoot = pChar:FindFirstChild("HumanoidRootPart")
                     if pRoot then
                         local distance = (myRoot.Position - pRoot.Position).Magnitude
-                        if distance > 250 then
+                        if distance > _G.MaxRenderDistance then
                             if pChar.Parent == Workspace then
                                 pChar.Parent = nil
                             end
                         else
                             if pChar.Parent == nil then
                                 pChar.Parent = Workspace
+                            end
+                            
+                            if not pChar:FindFirstChild("SmartRenderESP") then
+                                local highlight = Instance.new("Highlight")
+                                highlight.Name = "SmartRenderESP"
+                                highlight.FillColor = Color3.fromRGB(255, 60, 60)
+                                highlight.FillTransparency = 0.5
+                                highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+                                highlight.OutlineTransparency = 0
+                                highlight.Parent = pChar
                             end
                         end
                     end
@@ -123,4 +152,5 @@ task.spawn(function()
     end
 end)
 
-print("FPS BOOSTER đã được kích hoạt")
+
+print("FPS BOOSTER 2.5 đã được kích hoạt")
