@@ -1,0 +1,213 @@
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+local Window = Rayfield:CreateWindow({
+   Name = "TheNgocHub",
+   LoadingTitle = "Thx For Using",
+   LoadingSubtitle = "by DragonLTN",
+   ConfigurationSaving = {
+      Enabled = false,
+      FolderName = "PremiumHubConfig", 
+      FileName = "Config"
+   },
+   Discord = {Enabled = false, Invite = "noinvitelink", RememberJoins = true},
+   KeySystem = false,
+})
+
+local Workspace = game:GetService("Workspace")
+local Lighting = game:GetService("Lighting")
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+local Tab1 = Window:CreateTab("Tab 1", 4483362458)
+local Section1 = Tab1:CreateSection("fps")
+
+local RunBoosterButton = Tab1:CreateButton({
+   Name = "Fps Booster",
+   Callback = function()
+      if _G.SmartFPSBoosterExecuted then
+         Rayfield:Notify({Title = "Thông Báo", Content = "FPS Booster đã bật trước đó!", Duration = 3, Image = 4483362458})
+         return
+      end
+      _G.SmartFPSBoosterExecuted = true
+      
+      Rayfield:Notify({Title = "Khởi Động", Content = "Đang tối ưu cấu trúc kết xuất...", Duration = 3, Image = 4483362458})
+      
+      local protectedNames = {"baseplate", "spawnlocation", "floor", "ground", "sàn", "checkpoint", "teleport"}
+      local function IsImportant(obj)
+         if not obj or not obj.Name then return false end
+         local nameLower = string.lower(obj.Name)
+         for _, protected in ipairs(protectedNames) do
+            if nameLower == protected then return true end
+         end
+         if string.find(nameLower, "floor") or string.find(nameLower, "plate") then return true end
+         return false
+      end
+
+      local function SmartOptimize(obj)
+         if obj:IsA("BasePart") then
+            obj.Material = Enum.Material.SmoothPlastic
+            obj.CastShadow = false
+            obj.Reflectance = 0
+            if obj:IsA("MeshPart") and not IsImportant(obj) then obj.TextureID = "" end
+         elseif obj:IsA("ParticleEmitter") or obj:IsA("Smoke") or obj:IsA("Fire") or obj:IsA("Sparkles") or obj:IsA("Trail") or obj:IsA("Beam") then
+            obj:Destroy()
+         elseif obj:IsA("Decal") or obj:IsA("Texture") then
+            if obj.Parent and not IsImportant(obj.Parent) then obj:Destroy() end
+         end
+      end
+
+      task.spawn(function()
+         local count = 0
+         for _, descendant in ipairs(Workspace:GetDescendants()) do
+            if LocalPlayer.Character and descendant:IsDescendantOf(LocalPlayer.Character) then continue end
+            SmartOptimize(descendant)
+            count = count + 1
+            if count % 150 == 0 then RunService.Heartbeat:Wait() end
+         end
+      end)
+
+      Workspace.DescendantAdded:Connect(function(descendant)
+         if LocalPlayer.Character and descendant:IsDescendantOf(LocalPlayer.Character) then return end
+         SmartOptimize(descendant)
+      end)
+
+      Lighting.GlobalShadows = false
+      Lighting.Brightness = 1
+      Lighting.ClockTime = 12
+      for _, effect in ipairs(Lighting:GetChildren()) do
+         if effect:IsA("BlurEffect") or effect:IsA("SunRaysEffect") or effect:IsA("BloomEffect") or effect:IsA("DepthOfFieldEffect") then
+            effect:Destroy()
+         end
+      end
+
+      task.spawn(function()
+         local hiddenCharacters = {}
+         Players.PlayerRemoving:Connect(function(pl) hiddenCharacters[pl] = nil end)
+         while true do
+            task.wait(3)
+            local char = LocalPlayer.Character
+            local hrp = char and char:FindFirstChild("HumanoidRootPart")
+            if hrp then
+               for _, player in ipairs(Players:GetPlayers()) do
+                  if player ~= LocalPlayer then
+                     local pChar = player.Character or hiddenCharacters[player]
+                     if pChar and pChar:FindFirstChild("HumanoidRootPart") then
+                        local pHrp = pChar.HumanoidRootPart
+                        local distance = (hrp.Position - pHrp.Position).Magnitude
+                        if distance > 250 then
+                           if pChar.Parent == Workspace then
+                              hiddenCharacters[player] = pChar
+                              pChar.Parent = nil
+                           end
+                        else
+                           if hiddenCharacters[player] == pChar and pChar.Parent == nil then
+                              pChar.Parent = Workspace
+                              hiddenCharacters[player] = nil
+                           end
+                        end
+                     end
+                  end
+               end
+            end
+         end
+      end)
+
+      task.spawn(function()
+         while true do
+            task.wait(20)
+            gcinfo()
+            settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
+         end
+      end)
+   end,
+})
+
+local Tab2 = Window:CreateTab("PVP Mode", 4483362458)
+local Section2 = Tab2:CreateSection("aura")
+
+local HITBOX_SIZE = Vector3.new(2000, 2000, 2000)
+local originalSizes = {}
+local heartbeatConnection = nil
+local PVPModeToggle = nil
+
+local function resetSwordSize(handle, originalSize)
+   if handle and handle.Parent then
+      handle.Size = originalSize
+      handle.Massless = false
+      handle.CanCollide = true
+   end
+end
+
+local function stopLogic()
+   if heartbeatConnection then
+      heartbeatConnection:Disconnect()
+      heartbeatConnection = nil
+   end
+   for handle, originalSize in pairs(originalSizes) do
+      resetSwordSize(handle, originalSize)
+   end
+   table.clear(originalSizes)
+end
+
+local function startLogic()
+   if heartbeatConnection then return end
+   
+   heartbeatConnection = RunService.Heartbeat:Connect(function()
+      local character = LocalPlayer.Character
+      if not character then return end
+      
+      local currentTool = character:FindFirstChildOfClass("Tool")
+      if currentTool and currentTool:FindFirstChild("Handle") then
+         local handle = currentTool.Handle
+         if not originalSizes[handle] then
+            originalSizes[handle] = handle.Size
+         end
+         handle.Size = HITBOX_SIZE
+         handle.Massless = true
+         handle.CanCollide = false
+         currentTool:Activate()
+      end
+      
+      for handle, originalSize in pairs(originalSizes) do
+         if handle and handle.Parent then
+            local tool = handle.Parent
+            if tool:IsA("Tool") and tool.Parent:IsA("Backpack") then
+               resetSwordSize(handle, originalSize)
+               originalSizes[handle] = nil
+            end
+         else
+            originalSizes[handle] = nil
+         end
+      end
+   end)
+end
+
+PVPModeToggle = Tab2:CreateToggle({
+   Name = "Sword aura",
+   CurrentValue = false,
+   Flag = "SwordModToggle",
+   Callback = function(Value)
+      if Value then
+         startLogic()
+         Rayfield:Notify({Title = "PVP Mode", Content = "Đã kích hoạt Sword MOD thành công!", Duration = 3, Image = 4483362458})
+      else
+         stopLogic()
+         Rayfield:Notify({Title = "PVP Mode", Content = "Đã tắt Sword MOD, vũ khí trở về trạng thái gốc.", Duration = 3, Image = 4483362458})
+      end
+   end,
+})
+
+LocalPlayer.CharacterRemoving:Connect(function()
+   stopLogic()
+   if PVPModeToggle then
+      PVPModeToggle:Set(false)
+   end
+end)
+
+Rayfield:Notify({
+   Title = "Nice",
+   Content = "Greet",
+   Duration = 4,
+   Image = 4483362458,
+})
