@@ -1,15 +1,12 @@
--- ==========================================
--- FPS BOOSTER SMART RENDER (Delta Executor)
--- ==========================================
+_G.MaxRenderDistance = 1250
 
--- 1. Kiểm tra trùng lặp
-if _G.SmartFPSBoosterExecuted then
-    warn("[Smart FPS Booster]: Script đã được kích hoạt trước đó!")
-    return
-end
+if _G.SmartFPSBoosterExecuted then return end
 _G.SmartFPSBoosterExecuted = true
 
--- Khởi tạo các Services thiết yếu
+if not game:IsLoaded() then
+    game.Loaded:Wait()
+end
+
 local Workspace = game:GetService("Workspace")
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -17,7 +14,6 @@ local Lighting = game:GetService("Lighting")
 
 local localPlayer = Players.LocalPlayer
 
--- 2. Bộ lọc bảo vệ Map (IsImportant)
 local protectedNames = {
     ["Baseplate"] = true,
     ["SpawnLocation"] = true,
@@ -30,76 +26,61 @@ local protectedNames = {
 
 local function isImportant(instance)
     if not instance or not instance.Name then return false end
-    
-    -- Kiểm tra tên chính xác trong danh sách bảo vệ
     if protectedNames[instance.Name] then 
         return true 
     end
-    
-    -- Kiểm tra từ khóa chứa "floor" hoặc "plate"
     local lowerName = string.lower(instance.Name)
     if string.find(lowerName, "floor") or string.find(lowerName, "plate") then
         return true
     end
-    
     return false
 end
 
--- 3. Hàm Tối ưu hóa thông minh (SmartOptimize)
 local function smartOptimize(v)
     if v:IsA("BasePart") then
         v.Material = Enum.Material.SmoothPlastic
         v.CastShadow = false
         v.Reflectance = 0
-        
-        -- Nếu là MeshPart và KHÔNG nằm trong danh sách bảo vệ thì xóa Texture
         if v:IsA("MeshPart") and not isImportant(v) then
             v.TextureID = ""
         end
-        
-    elseif v:IsA("ParticleEmitter") or v:IsA("Smoke") or v:IsA("Fire") or v:IsA("Sparkles") or v:IsA("Trail") or v:IsA("Beam") then
-        -- Xóa ngay lập tức các hiệu ứng hạt/chiêu thức gây lag
+    elseif v:IsA("ParticleEmitter") or v:IsA("Smoke") or v:IsA("Fire") or v:IsA("Sparkles") or v:IsA("Trail") or v:IsA("Beam") or v:IsA("Clouds") then
         v:Destroy()
-        
     elseif v:IsA("Decal") or v:IsA("Texture") then
-        -- Chỉ xóa Decal/Texture nếu vật thể cha không quan trọng
         if v.Parent and not isImportant(v.Parent) then
             v:Destroy()
         end
+    elseif v:IsA("Atmosphere") or v:IsA("Sky") then
+        v:Destroy()
     end
 end
 
--- 4. Quét Map ban đầu & Đón đầu hiệu ứng mới
--- Quét map ban đầu bằng task.spawn để không làm nghẽn luồng chính
 task.spawn(function()
     local count = 0
     for _, v in ipairs(Workspace:GetDescendants()) do
         smartOptimize(v)
         count = count + 1
-        
-        -- Cứ mỗi 150 vật thể thì nghỉ một nhịp Heartbeat để chống khựng/đứng game
         if count % 150 == 0 then
             RunService.Heartbeat:Wait()
         end
     end
 end)
 
--- Lắng nghe và xử lý các hiệu ứng chiêu thức mới xuất hiện
 Workspace.DescendantAdded:Connect(function(v)
-    -- Bỏ qua nếu vật thể thuộc về nhân vật của người chơi hiện tại
     if localPlayer.Character and v:IsDescendantOf(localPlayer.Character) then
         return
     end
     smartOptimize(v)
 end)
 
--- 5. Tối ưu Ánh sáng (Lighting)
 local function optimizeLighting()
     Lighting.GlobalShadows = false
     Lighting.Brightness = 1
-    Lighting.ClockTime = 12 -- Cố định thời gian buổi trưa để map sáng rõ
-
-    -- Xóa các hiệu ứng làm nhòe và đổ bóng nâng cao có sẵn
+    Lighting.ClockTime = 12
+    
+    Lighting.FogEnd = _G.MaxRenderDistance
+    Lighting.FogStart = _G.MaxRenderDistance - 100
+    
     for _, v in ipairs(Lighting:GetChildren()) do
         if v:IsA("BlurEffect") or v:IsA("SunRaysEffect") or v:IsA("BloomEffect") or v:IsA("DepthOfFieldEffect") then
             v:Destroy()
@@ -108,7 +89,17 @@ local function optimizeLighting()
 end
 optimizeLighting()
 
--- Ngăn chặn các hiệu ứng Lighting mới được thêm vào sau đó
+pcall(function()
+    local terrain = Workspace:FindFirstChildOfClass("Terrain")
+    if terrain then
+        terrain.WaterWaveSize = 0
+        terrain.WaterWaveSpeed = 0
+        terrain.WaterReflectance = 0
+        terrain.Decoration = false
+    end
+    Workspace.GlobalWind = Vector3.new(0, 0, 0)
+end)
+
 Lighting.ChildAdded:Connect(function(v)
     if v:IsA("BlurEffect") or v:IsA("SunRaysEffect") or v:IsA("BloomEffect") or v:IsA("DepthOfFieldEffect") then
         task.defer(function()
@@ -117,73 +108,46 @@ Lighting.ChildAdded:Connect(function(v)
     end
 end)
 
--- 6. Giải phóng RAM định kỳ & Ép đồ họa tối thiểu
 task.spawn(function()
-    while task.wait(20) do
-        gcinfo() -- Thu gom rác bộ nhớ (Garbage Collection) giải phóng RAM
-        settings().Rendering.QualityLevel = Enum.QualityLevel.Level01 -- Ép cấu hình đồ họa Roblox về mức thấp nhất
-    end
-end)
-
-print("[Smart FPS Booster]: Kích hoạt thành công! Hiệu năng đã được tối ưu tối đa.")
-            obj.Reflectance = 0
-            
-            if obj:IsA("MeshPart") then
-                obj.TextureID = ""
+    while task.wait(3) do
+        local myChar = localPlayer.Character
+        local myRoot = myChar and myChar:FindFirstChild("HumanoidRootPart")
+        if myRoot then
+            for _, p in ipairs(Players:GetPlayers()) do
+                if p ~= localPlayer and p.Character then
+                    local pChar = p.Character
+                    local pRoot = pChar:FindFirstChild("HumanoidRootPart")
+                    if pRoot then
+                        local distance = (myRoot.Position - pRoot.Position).Magnitude
+                        if distance > _G.MaxRenderDistance then
+                            if pChar.Parent == Workspace then
+                                pChar.Parent = nil
+                            end
+                        else
+                            if pChar.Parent == nil then
+                                pChar.Parent = Workspace
+                            end
+                            
+                            if not pChar:FindFirstChild("SmartRenderESP") then
+                                local highlight = Instance.new("Highlight")
+                                highlight.Name = "SmartRenderESP"
+                                highlight.FillColor = Color3.fromRGB(255, 60, 60)
+                                highlight.FillTransparency = 0.5
+                                highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+                                highlight.OutlineTransparency = 0
+                                highlight.Parent = pChar
+                            end
+                        end
+                    end
+                end
             end
         end
-    -- Xử lý Decal / Texture
-    elseif obj:IsA("Decal") or obj:IsA("Texture") then
-        if not isImportant(obj.Parent) then
-            obj:Destroy()
-        end
-    -- Xử lý hiệu ứng dư thừa
-    elseif obj:IsA("ParticleEmitter") or obj:IsA("Smoke") or obj:IsA("Fire") or 
-           obj:IsA("Sparkles") or obj:IsA("Trail") or obj:IsA("Beam") then
-        obj:Destroy()
     end
-end
+end)
 
--- 1. Quét map ban đầu (Dùng task.spawn để không làm treo game)
 task.spawn(function()
-    local descendants = Workspace:GetDescendants()
-    for i, v in ipairs(descendants) do
-        if i % 150 == 0 then RunService.Heartbeat:Wait() end
-        optimizePart(v)
+    while task.wait(20) do
+        gcinfo()
+        settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
     end
 end)
-
--- 2. Đón đầu các vật thể mới
-Workspace.DescendantAdded:Connect(function(v)
-    -- Bỏ qua nhân vật của người chơi
-    if Players.LocalPlayer.Character and v:IsDescendantOf(Players.LocalPlayer.Character) then return end
-    optimizePart(v)
-end)
-
--- 3. Tối ưu hóa Lighting
-Lighting.GlobalShadows = false
-Lighting.Brightness = 1
-Lighting.ClockTime = 12
-Lighting.Ambient = Color3.fromRGB(200, 200, 200) -- Tăng độ sáng môi trường nhẹ
-Lighting.OutdoorAmbient = Color3.fromRGB(200, 200, 200)
-
-for _, v in pairs(Lighting:GetChildren()) do
-    if v:IsA("BlurEffect") or v:IsA("SunRaysEffect") or v:IsA("BloomEffect") or v:IsA("DepthOfFieldEffect") then
-        v:Destroy()
-    end
-end
-
--- 4. Giải phóng RAM định kỳ & Ép chất lượng đồ họa thấp nhất
-task.spawn(function()
-    while true do
-        -- Ép mức đồ họa thấp nhất
-        GameSettings.SavedQualityLevel = Enum.QualityLevel.Level01
-        
-        -- Dọn dẹp rác (Garbage Collection)
-        collectgarbage("collect")
-        
-        task.wait(20)
-    end
-end)
-
-print("Smart FPS Booster đã kích hoạt thành công!")
