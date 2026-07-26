@@ -3,7 +3,7 @@ local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 -- Lấy key tự động từ một URL do bạn quản lý
 local currentKey = "TheNgocDefault" -- Giá trị dự phòng nếu không kết nối được
 local success, result = pcall(function()
-    return game:HttpGet("LINK_CHUA_KEY_CUA_BAN_O_DAY")
+    return game:HttpGet("https://raw.githubusercontent.com/DragonLTN/TheNgocHub/refs/heads/main/Key")
 end)
 
 if success and result then
@@ -20,7 +20,7 @@ local Window = Rayfield:CreateWindow({
     KeySettings = {
         Title = "Key System",
         Subtitle = "Nhập key để tiếp tục",
-        Note = "Key cập nhật mới mỗi ngày trên TikTok @dragonltn",
+        Note = "Key lấy ở TikTok @dragonltn",
         FileName = "Key",
         SaveKey = false,
         Key = {currentKey} -- Sử dụng biến key động vừa lấy về
