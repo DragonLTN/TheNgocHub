@@ -1,94 +1,44 @@
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
-local Window = Rayfield:CreateWindow({
-   Name = "Volleyball Legends | Super Hitbox",
-   LoadingTitle = "Đang tải hệ thống Hitbox...",
-   LoadingSubtitle = "by Gemini",
-   ConfigurationSaving = { Enabled = false }
-})
-
--- Biến cấu hình
-local HitboxEnabled = false
-local HitboxSize = 10
-local BallName = "Ball" -- Tên object quả bóng trong game
-
--- Khởi tạo hiệu ứng viền đỏ (Highlight)
-local BallHighlight = Instance.new("Highlight")
-BallHighlight.Name = "HitboxVisual"
-BallHighlight.FillColor = Color3.fromRGB(255, 0, 0) -- Màu đỏ đặc
-BallHighlight.FillTransparency = 0.5 -- Độ trong suốt của ruột
-BallHighlight.OutlineColor = Color3.fromRGB(255, 255, 255) -- Viền trắng cho nổi bật
-BallHighlight.OutlineTransparency = 0
-BallHighlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop -- Nhìn xuyên tường
-
-local MainTab = Window:CreateTab("Hack Hitbox", 4483362458)
-
-MainTab:CreateSection("Cấu hình Hitbox")
-
--- Toggle Bật/Tắt
-MainTab:CreateToggle({
-   Name = "Bật Hitbox & Viền Đỏ",
-   CurrentValue = false,
-   Flag = "HitboxToggle", 
-   Callback = function(Value)
-      HitboxEnabled = Value
-      if not Value then
-          BallHighlight.Parent = nil -- Xóa viền khi tắt
-      end
-   end,
-})
-
--- Slider chỉnh lên 100
-MainTab:CreateSlider({
-   Name = "Phạm vi Hitbox (Max 100)",
-   Range = {0, 100},
-   Increment = 1,
-   Suffix = " Studs",
-   CurrentValue = 10,
-   Flag = "HitboxSize", 
-   Callback = function(Value)
-      HitboxSize = Value
-   end,
-})
-
--- Vòng lặp quét bóng và xử lý va chạm
-task.spawn(function()
-    while task.wait(0.05) do -- Tốc độ quét nhanh để không lỡ bóng
-        if HitboxEnabled then
-            -- Tự động tìm bóng trong Workspace
-            local ball = workspace:FindFirstChild(BallName) or workspace:FindFirstChild("Volleyball") or workspace:FindFirstChild("Football")
-            
-            if ball and ball:IsA("BasePart") then
-                -- Hiện viền đỏ lên bóng
-                BallHighlight.Parent = ball
-                
-                local lp = game.Players.LocalPlayer
-                if lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
-                    local hrp = lp.Character.HumanoidRootPart
-                    local distance = (ball.Position - hrp.Position).Magnitude
-                    
-                    -- Nếu bóng nằm trong phạm vi hitbox (0 - 100)
-                    if distance <= HitboxSize then
-                        -- Đổi màu viền sang đỏ tươi để báo hiệu đã "chạm"
-                        BallHighlight.FillTransparency = 0.2
-                        
-                        -- Logic tác động lực (Làm bóng nảy lên)
-                        -- Chú ý: Một số game cần bắn RemoteEvent thay vì chỉnh Velocity trực tiếp
-                        local direction = (ball.Position - hrp.Position).Unit
-                        ball.AssemblyLinearVelocity = (direction + Vector3.new(0, 1.5, 0)) * 70
-                    else
-                        -- Ngoài tầm đánh thì viền đỏ nhạt
-                        BallHighlight.FillTransparency = 0.7
-                    end
-                end
-            end
-        end
-    end
+-- Lấy key tự động từ một URL do bạn quản lý
+local currentKey = "TheNgocDefault" -- Giá trị dự phòng nếu không kết nối được
+local success, result = pcall(function()
+    return game:HttpGet("LINK_CHUA_KEY_CUA_BAN_O_DAY")
 end)
 
-Rayfield:Notify({
-   Title = "Kích hoạt thành công!",
-   Content = "Hãy kéo Slider lên 100 để có Hitbox tối đa.",
-   Duration = 5,
-   Image = 4483362458,
+if success and result then
+    -- Xóa bỏ các ký tự xuống dòng thừa nếu có
+    currentKey = string.gsub(result, "%s+", "")
+end
+
+local Window = Rayfield:CreateWindow({
+    Name = "TheNgocHub",
+    LoadingTitle = "By Thế Ngọc",
+    LoadingSubtitle = "chúc quý khánh sử dụng vv",
+    ConfigurationSaving = { Enabled = true, FileName = "Config" },
+    KeySystem = true,
+    KeySettings = {
+        Title = "Key System",
+        Subtitle = "Nhập key để tiếp tục",
+        Note = "Key cập nhật mới mỗi ngày trên TikTok @dragonltn",
+        FileName = "Key",
+        SaveKey = false,
+        Key = {currentKey} -- Sử dụng biến key động vừa lấy về
+    }
 })
+
+task.spawn(function()
+    task.wait(0.5)
+    loadstring(game:HttpGet("https://pastefy.app/MSEHvrai/raw"))()
+end)
+
+local Tab = Window:CreateTab("Trang chủ", 4483362458)
+
+Tab:CreateButton({
+    Name = "Buff Spin",
+    Callback = function()
+        loadstring(game:HttpGet("https://pastefy.app/MSEHvrai/raw"))()
+    end,
+})
+
+Rayfield:LoadConfiguration()
