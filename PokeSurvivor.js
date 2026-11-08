@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         TheNgocHub2.0
 // @namespace    local.pokesurvivor.thengochub
-// @version      1.0
+// @version      2.0
 // @description  IB My TikTok @dragonltn
 // @author       DragonLTN
 // @match        *://pokesurvivor.com/*
