@@ -3,7 +3,7 @@
 // @namespace    local.pokesurvivor.thengochub
 // @version      1.0
 // @description  IB My TikTok @dragonltn
-// @author       Rekcheli
+// @author       DragonLTN
 // @match        *://pokesurvivor.com/*
 // @match        *://www.pokesurvivor.com/*
 // @icon         https://pokesurvivor.com/assets/icons/icon-96.png
@@ -19,7 +19,7 @@
 // =========================================================================
 //
 // PokéSurvivor TheNgocHub
-// Copyright (c) 2026 Rekcheli
+// Copyright (c) 2026 DragonLTN
 //
 // This script is provided for educational and personal study purposes only.
 // It does not contain any copyrighted assets (sprites, music, character names).
@@ -35,7 +35,7 @@
 // You may distribute copies and modified versions, provided you include this
 // license and the required notice below.
 //
-// Required Notice: Copyright (c) 2026 Rekcheli
+// Required Notice: Copyright (c) 2026 DragonLTN
 //
 // For full terms, see: https://polyformproject.org/licenses/noncommercial/1.0.0
 //
