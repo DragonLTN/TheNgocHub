@@ -10,6 +10,8 @@
 // @run-at       document-end
 // @grant        none
 // @license      PolyForm-Noncommercial-1.0.0
+// @downloadURL https://raw.githubusercontent.com/DragonLTN/TheNgocHub/refs/heads/main/PokeSurvivor.js
+// @updateURL https://raw.githubusercontent.com/DragonLTN/TheNgocHub/refs/heads/main/PokeSurvivor.js
 // ==/UserScript==
 
 // =========================================================================
