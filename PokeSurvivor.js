@@ -3,7 +3,7 @@
 // @namespace    local.pokesurvivor.thengochub
 // @version      2.0
 // @description  IB My TikTok @dragonltn
-// @author       DragonLTN
+// @author       DagonLTN
 // @match        *://pokesurvivor.com/*
 // @match        *://www.pokesurvivor.com/*
 // @icon         https://pokesurvivor.com/assets/icons/icon-96.png
@@ -1462,6 +1462,8 @@
     style.textContent = `
       #ps-ultimate-panel {
         position: fixed; top: 16px; right: 16px; width: 420px;
+        max-height: calc(100vh - 32px); max-height: calc(100dvh - 32px);
+        box-sizing: border-box;
         background: rgba(10, 15, 29, 0.96);
         backdrop-filter: blur(10px);
         border: 1px solid rgba(255, 255, 255, 0.14);
@@ -1495,7 +1497,13 @@
         padding: 10px 12px;
         flex: 1 1 auto;
         min-height: 0;
-        overflow-y: auto;
+        max-height: 100%;
+        overflow-y: auto !important;
+        overflow-x: hidden;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior-y: contain;
+        touch-action: pan-y;
+        scrollbar-width: thin;
       }
       #ps-ultimate-panel .ps-tabs {
         flex: 0 0 auto;
@@ -1896,7 +1904,19 @@
     // inizio funzione Panel Layout & Resize
     panel.style.resize = 'both';
     panel.style.overflow = 'hidden';
+    // Giới hạn chiều cao theo màn hình để phần nội dung bên trong có thể cuộn hết.
+    panel.style.maxHeight = 'calc(100vh - 32px)';
+    panel.style.maxHeight = 'calc(100dvh - 32px)';
     panel.style.minWidth = '240px';
+    const scrollBody = panel.querySelector('.ps-body');
+    if (scrollBody) {
+      scrollBody.style.overflowY = 'auto';
+      scrollBody.style.overflowX = 'hidden';
+      scrollBody.style.webkitOverflowScrolling = 'touch';
+      scrollBody.style.overscrollBehaviorY = 'contain';
+      scrollBody.style.touchAction = 'pan-y';
+      scrollBody.style.minHeight = '0';
+    }
     panel.style.minHeight = '200px';
 
     (function applyPanelLayout() {
