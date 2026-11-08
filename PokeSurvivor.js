@@ -10,8 +10,6 @@
 // @run-at       document-end
 // @grant        none
 // @license      PolyForm-Noncommercial-1.0.0
-// @downloadURL https://update.greasyfork.org/scripts/600697/Pok%C3%A9Survivor%20Ultimate%20Trainer%20%20HUD.user.js
-// @updateURL https://update.greasyfork.org/scripts/600697/Pok%C3%A9Survivor%20Ultimate%20Trainer%20%20HUD.meta.js
 // ==/UserScript==
 
 // =========================================================================
