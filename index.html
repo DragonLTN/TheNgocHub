@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LTNSCANNER — Tự động quét code Spin còn dùng được</title>
+<meta name="description" content="LTNSCANNER tự động quét code spin miễn phí, chỉ giữ code còn dùng được, tự quét lại liên tục và báo ngay khi có code mới.">
+</head>
+<body>
+<style>
+  :root{
+    --bg:#0d1021; --bg2:#151a35; --card:#1b2142; --card2:#232b55;
+    --gold:#f5c542; --gold2:#ffe08a; --accent:#6c7bff; --accent2:#9aa5ff;
+    --text:#eef0ff; --muted:#9aa3c7; --ok:#3ddc84; --warn:#ff9f43; --bad:#ff5d5d;
+    --line:rgba(255,255,255,.09); --radius:14px;
+  }
+  *{box-sizing:border-box}
+  body{text-align:left; background:radial-gradient(1200px 600px at 50% -10%, #232b66 0%, var(--bg) 55%) fixed, var(--bg); color:var(--text); font-family:"Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif; margin:0; padding:0}
+  .wrap{max-width:1080px; margin:0 auto; padding:18px 16px 60px}
+  header.hero{background:linear-gradient(135deg,#232b66,#3a2a6e 55%,#6e2a4e); border:1px solid var(--line); border-radius:20px; padding:22px 22px 18px; position:relative; overflow:hidden}
+  header.hero:after{content:""; position:absolute; inset:0; background:radial-gradient(500px 200px at 85% 0%, rgba(245,197,66,.25), transparent 70%); pointer-events:none}
+  .hero h1{margin:0 0 6px; font-size:clamp(22px,4vw,34px); letter-spacing:.3px}
+  .hero h1 .gold{color:var(--gold)}
+  .hero p{margin:6px 0; color:#d6dbff; line-height:1.55}
+  .badges{display:flex; gap:8px; flex-wrap:wrap; margin-top:10px}
+  .pill{font-size:12.5px; padding:5px 11px; border-radius:999px; background:rgba(0,0,0,.35); border:1px solid var(--line); color:#fff}
+  .pill.live{border-color:var(--ok); color:#c9ffe2}
+  .pill .dot{display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--ok); margin-right:6px; animation:blink 1.6s infinite}
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+  .panel{background:linear-gradient(180deg,var(--card),var(--bg2)); border:1px solid var(--line); border-radius:var(--radius); padding:16px; margin-top:14px}
+  .panel h2{margin:0 0 10px; font-size:16px; text-transform:uppercase; letter-spacing:1px; color:var(--gold2)}
+  .controls{display:flex; gap:10px; flex-wrap:wrap; align-items:center}
+  button{cursor:pointer; border:1px solid var(--line); border-radius:10px; padding:10px 16px; font-weight:700; font-size:14px; color:#10122b; background:linear-gradient(180deg,var(--gold2),var(--gold)); transition:transform .08s ease, filter .15s}
+  button:hover{filter:brightness(1.07)} button:active{transform:scale(.97)}
+  button.ghost{background:#232b55; color:var(--text)}
+  button.danger{background:#3a1f2b; color:#ffb3b3; border-color:#6e2a3e}
+  button.small{padding:7px 11px; font-size:13px; border-radius:8px}
+  button:disabled{opacity:.55; cursor:wait}
+  select, input[type=text]{background:#0f1330; color:var(--text); border:1px solid var(--line); border-radius:10px; padding:9px 11px; font-size:14px}
+  label.chk{display:inline-flex; gap:7px; align-items:center; font-size:14px; color:#d6dbff; background:#0f1330; border:1px solid var(--line); padding:8px 12px; border-radius:10px; cursor:pointer}
+  .statusline{margin-top:10px; font-size:13.5px; color:var(--muted); line-height:1.7}
+  .statusline b{color:var(--text)}
+  .progress{height:8px; background:#0f1330; border-radius:99px; overflow:hidden; margin-top:10px; border:1px solid var(--line)}
+  .progress i{display:block; height:100%; width:0%; background:linear-gradient(90deg,var(--accent),var(--gold)); transition:width .25s}
+  .stats{display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-top:14px}
+  .stat{background:#0f1330; border:1px solid var(--line); border-radius:12px; padding:12px; text-align:center}
+  .stat .n{font-size:26px; font-weight:800; color:var(--gold)}
+  .stat .l{font-size:12.5px; color:var(--muted); margin-top:2px}
+  .filters{display:flex; gap:8px; flex-wrap:wrap; align-items:center}
+  .grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(250px,1fr)); gap:12px; margin-top:12px}
+  .card{background:linear-gradient(180deg,var(--card2),#171c3d); border:1px solid var(--line); border-radius:14px; padding:13px; position:relative; display:flex; flex-direction:column; gap:8px}
+  .card.isnew{border-color:var(--gold); box-shadow:0 0 0 1px var(--gold), 0 8px 30px rgba(245,197,66,.18)}
+  .card.claimed{opacity:.72}
+  .card .top{display:flex; gap:8px; align-items:center; justify-content:space-between}
+  .tag{font-size:11.5px; font-weight:800; padding:3px 9px; border-radius:99px; letter-spacing:.4px}
+  .tag.new{background:var(--gold); color:#231a02}
+  .tag.today{background:#0f1330; color:var(--gold2); border:1px solid var(--gold)}
+  .tag.old{background:#0f1330; color:var(--muted); border:1px solid var(--line)}
+  .tag.exp{background:#3a1f2b; color:#ffb3b3; border:1px solid #6e2a3e}
+  .src{font-size:12px; color:var(--muted)}
+  .reward{font-size:21px; font-weight:800}
+  .reward small{font-size:12px; color:var(--muted); font-weight:600}
+  .url{font-size:11.5px; color:#8f99c9; word-break:break-all; line-height:1.5; max-height:32px; overflow:hidden}
+  .row{display:flex; gap:8px}
+  .row button{flex:1}
+  .meta{font-size:12px; color:var(--muted); display:flex; justify-content:space-between; gap:8px}
+  .empty{padding:26px; text-align:center; color:var(--muted); border:1px dashed var(--line); border-radius:12px; margin-top:12px; line-height:1.7}
+  .log{max-height:220px; overflow:auto; background:#0a0d24; border:1px solid var(--line); border-radius:10px; padding:10px 12px; font-size:13px; line-height:1.7}
+  .log .t{color:#7c86b8; margin-right:8px}
+  .log .err{color:#ff9d9d} .log .ok{color:#9dffc4} .log .inf{color:#cfd6ff}
+  .srclist{display:grid; gap:8px}
+  .srcrow{display:flex; gap:10px; align-items:center; background:#0f1330; border:1px solid var(--line); border-radius:10px; padding:9px 12px; font-size:13.5px; flex-wrap:wrap}
+  .srcrow .nm{font-weight:700} .srcrow .u{color:#8f99c9; font-size:12px; word-break:break-all}
+  .srcrow .st{margin-left:auto; font-size:12.5px; color:var(--muted)}
+  ol.guide{line-height:1.8; color:#d6dbff; margin:8px 0 0 20px; padding:0}
+  #toasts{position:fixed; right:14px; bottom:14px; display:flex; flex-direction:column; gap:8px; z-index:99; max-width:min(360px,90vw)}
+  .toast{background:#10153a; border:1px solid var(--gold); color:#fff; border-radius:12px; padding:11px 14px; font-size:13.5px; box-shadow:0 10px 30px rgba(0,0,0,.5); line-height:1.5}
+  footer{margin-top:16px; color:var(--muted); font-size:12.5px; line-height:1.7; text-align:center}
+  @media(max-width:640px){ .stats{grid-template-columns:repeat(2,1fr)} .wrap{padding:12px 10px 50px} }
+</style>
+
+<div class="wrap">
+  <header class="hero">
+    <h1>LTNSCANNER</h1>
+    <div class="badges">
+      <span class="pill live"><span class="dot"></span><span id="liveClock">--:--:--</span> · đang theo dõi</span>
+      <span class="pill" id="autoPill">Tự động quét: TẮT</span>
+    </div>
+  </header>
+
+  <div class="panel">
+    <h2>Điều khiển quét</h2>
+    <div class="controls">
+      <button id="scanBtn">Quét ngay</button>
+      <button id="autoBtn" class="ghost">Bật tự động quét</button>
+      <select id="intervalSel" title="Chu kỳ tự quét">
+        <option value="1">Mỗi 1 phút</option>
+        <option value="3">Mỗi 3 phút</option>
+        <option value="5" selected>Mỗi 5 phút</option>
+        <option value="10">Mỗi 10 phút</option>
+        <option value="30">Mỗi 30 phút</option>
+      </select>
+      <label class="chk"><input type="checkbox" id="soundChk" checked> Âm báo khi có mới</label>
+      <button id="notiBtn" class="ghost small">Bật thông báo trình duyệt</button>
+    </div>
+    <div class="progress"><i id="progBar"></i></div>
+    <div class="statusline" id="statusLine">Chưa quét lần nào. Bấm <b>Quét ngay</b> để bắt đầu.</div>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="n" id="stTotal">0</div><div class="l">Tổng link</div></div>
+    <div class="stat"><div class="n" id="stToday">0</div><div class="l">Link hôm nay</div></div>
+    <div class="stat"><div class="n" id="stNew">0</div><div class="l">Mới từ lúc mở trang</div></div>
+    <div class="stat"><div class="n" id="stClaimed">0</div><div class="l">Đã nhận</div></div>
+  </div>
+
+  <div class="panel">
+    <h2>Lọc và nhận hàng loạt</h2>
+    <div class="filters">
+      <input type="text" id="qInput" placeholder="Tìm kiếm, ví dụ: 25 spins..." style="flex:1; min-width:170px">
+      <select id="dateFilter">
+        <option value="today">Hôm nay</option>
+        <option value="3" selected>3 ngày qua</option>
+        <option value="7">7 ngày qua</option>
+        <option value="all">Tất cả</option>
+      </select>
+      <select id="srcFilter" hidden><option value="all">Mọi nguồn</option></select>
+      <select id="sortSel">
+        <option value="new">Mới nhất trước</option>
+        <option value="old">Cũ nhất trước</option>
+      </select>
+      <label class="chk"><input type="checkbox" id="hideClaimedChk"> Chỉ hiện chưa nhận</label>
+      <label class="chk"><input type="checkbox" id="hideExpiredChk" checked> Chỉ hiện code còn dùng được</label>
+    </div>
+    <div class="controls" style="margin-top:10px">
+      <button id="openAllBtn" class="ghost small">Mở tất cả link đang hiện</button>
+      <button id="markAllBtn" class="ghost small">Đánh dấu đã nhận hết</button>
+      <button id="clearClaimedBtn" class="ghost small">Bỏ đánh dấu đã nhận</button>
+    </div>
+    <div id="listGrid" class="grid"></div>
+    <div id="emptyBox" class="empty" hidden>Chưa có link nào khớp bộ lọc. Bấm <b>Quét ngay</b> để tải link mới nhất từ các nguồn.</div>
+  </div>
+
+  <div class="panel" hidden>
+    <h2>Nguồn quét</h2>
+    <div class="srclist" id="srcList"></div>
+    <div class="controls" style="margin-top:10px">
+      <input type="text" id="customUrlInput" placeholder="Dán URL trang tổng hợp spin khác để thêm nguồn..." style="flex:1; min-width:200px">
+      <button id="addSrcBtn" class="ghost small">Thêm nguồn</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Nhật ký quét</h2>
+    <div class="log" id="logBox"></div>
+  </div>
+
+  <div class="panel">
+    <h2>Cách nhận spin</h2>
+    <ol class="guide">
+      <li>Bấm <b>Quét ngay</b>, chờ vài giây để máy quét xong các nguồn.</li>
+      <li>Các thẻ gắn nhãn <b>MỚI</b> là link vừa xuất hiện lần đầu. Bấm <b>Nhận spin</b> bằng điện thoại hoặc máy tính bảng đã cài Coin Master.</li>
+      <li>Link spin thường hết hạn sau khoảng 2 đến 3 ngày, mỗi link chỉ nhận được 1 lần cho mỗi tài khoản.</li>
+      <li>Bật <b>tự động quét</b> rồi treo tab này, web sẽ tự kiểm tra lại theo chu kỳ và kêu khi có link mới.</li>
+      <li>Nếu bấm Nhận mà game không mở, hãy mở lại link đó bằng trình duyệt trên thiết bị có cài game.</li>
+    </ol>
+  </div>
+
+  <footer>LTNSCANNER tự động theo dõi code quà tặng công khai và chỉ giữ lại code còn trong hạn dùng. Web không lưu mật khẩu hay tài khoản game của bạn.</footer>
+</div>
+<div id="toasts"></div>
+<noscript><div style="padding:20px;text-align:center">Web cần bật JavaScript mới quét được. Hãy mở file bằng Chrome hoặc Safari.</div></noscript>
+
+<script>
+(function(){
+  "use strict";
+  window.addEventListener("error", function(e){
+    try{
+      var b=document.getElementById("logBox");
+      if(b){ var d=document.createElement("div"); d.style.color="#ff9d9d"; d.textContent="[lỗi trang] "+(e.message||"script error"); b.prepend(d); }
+      var s=document.getElementById("statusLine");
+      if(s && !document.querySelector("#listGrid .card")) s.innerHTML="Web gặp lỗi khi chạy. Hãy dùng trình duyệt khác (Chrome/Safari) và bật JavaScript rồi mở lại file.";
+    }catch(_){}
+  });
+  var DEFAULT_SOURCES = [
+    {id:"pocket-tactics", name:"Pocket Tactics", url:"https://www.pockettactics.com/coin-master/free-spins"},
+    {id:"eurogamer", name:"Eurogamer", url:"https://www.eurogamer.net/coin-master-free-spins-coins-links"},
+    {id:"pocket-gamer", name:"Pocket Gamer", url:"https://www.pocketgamer.com/coin-master/free-spins/"},
+    {id:"levvvel", name:"Levvvel", url:"https://levvvel.com/coin-master/free-spins/"},
+    {id:"gamersdunia", name:"Gamers Dunia", url:"https://gamersdunia.com/coin-master-free-spins/"}
+  ];
+  // Link thật quét được ngày 13-11-2026, dùng làm dữ liệu khởi đầu để trang không trống khi chưa quét.
+  var SEED = [
+    {url:"https://static.moonactive.net/static/coinmaster/reward/reward2.html?c=pe_HELPBXVgVx_20261113", reward:"100 Spins", sourceId:"pocket-tactics"},
+    {url:"https://static.moonactive.net/static/coinmaster/reward/reward2.html?c=pe_TWIgPVwQJ_20261113", reward:"25 Spins", sourceId:"pocket-tactics"},
+    {url:"https://static.moonactive.net/static/coinmaster/reward/reward2.html?c=pe_FCBCVpNpz_20261113", reward:"25 Spins", sourceId:"pocket-tactics"},
+    {url:"https://static.moonactive.net/static/coinmaster/reward/reward2.html?c=pe_INSQKvvAr_20261113", reward:"25 Spins", sourceId:"pocket-tactics"},
+    {url:"https://static.moonactive.net/static/coinmaster/reward/reward2.html?c=pe_CHATByUQwjW_20261113", reward:"25 Spins", sourceId:"pocket-tactics"},
+    {url:"https://static.moonactive.net/static/coinmaster/reward/reward2.html?c=pe_FCBfpjQat_20261113", reward:"25 Spins", sourceId:"pocket-tactics"},
+    {url:"https://static.moonactive.net/static/coinmaster/reward/reward2.html?c=pe_LINEtcFarq_20261113", reward:"100 Spins", sourceId:"pocket-tactics"},
+    {url:"https://static.moonactive.net/static/coinmaster/reward/reward2.html?c=pe_INSFyITCO_20261112", reward:"100 Spins", sourceId:"pocket-tactics"},
+    {url:"https://static.moonactive.net/static/coinmaster/reward/reward2.html?c=pe_TWIGJWsCs_20261112", reward:"25 Spins", sourceId:"pocket-tactics"},
+    {url:"https://static.moonactive.net/static/coinmaster/reward/reward2.html?c=pe_FCBANbmpn_20261112", reward:"25 Spins", sourceId:"pocket-tactics"}
+  ];
+
+  var S = {
+    links: new Map(), seen: {}, claimed: {}, enabled: {}, custom: [],
+    auto:false, intervalMin:5, countdown:0, scanning:false,
+    sessionNew:0, lastScanAt:0, perSource:{}
+  };
+
+  function $(id){ return document.getElementById(id); }
+  function esc(s){ return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+  function todayStr(d){ d=d||new Date(); var m=("0"+(d.getMonth()+1)).slice(-2), dd=("0"+d.getDate()).slice(-2); return d.getFullYear()+"-"+m+"-"+dd; }
+  function fmtTime(ts){ var d=new Date(ts); var p=function(n){return ("0"+n).slice(-2);}; return p(d.getHours())+":"+p(d.getMinutes())+":"+p(d.getSeconds())+" "+p(d.getDate())+"/"+p(d.getMonth()+1); }
+  function fmtCountdown(s){ s=Math.max(0,s); var m=Math.floor(s/60), r=s%60; return ("0"+m).slice(-2)+":"+("0"+r).slice(-2); }
+
+  function log(msg, kind){
+    kind = kind||"inf";
+    var box=$("logBox"); if(!box) return;
+    var div=document.createElement("div");
+    var t=document.createElement("span"); t.className="t"; t.textContent="["+fmtTime(Date.now())+"]";
+    var s=document.createElement("span"); s.className=kind; s.textContent=msg;
+    div.appendChild(t); div.appendChild(s);
+    box.prepend(div);
+    while(box.children.length>90) box.removeChild(box.lastChild);
+  }
+  function toast(msg){
+    var c=$("toasts"); var d=document.createElement("div"); d.className="toast"; d.textContent=msg;
+    c.appendChild(d); setTimeout(function(){ d.style.opacity="0"; d.style.transition="opacity .4s"; setTimeout(function(){d.remove();},450); }, 5200);
+  }
+  function beep(){
+    try{
+      var ctx = new (window.AudioContext||window.webkitAudioContext)();
+      var notes=[660,880,990];
+      notes.forEach(function(f,i){
+        var o=ctx.createOscillator(), g=ctx.createGain();
+        o.type="sine"; o.frequency.value=f; g.gain.value=0.12;
+        o.connect(g); g.connect(ctx.destination);
+        var t=ctx.currentTime+i*0.16;
+        o.start(t); g.gain.setValueAtTime(0.12,t); g.gain.exponentialRampToValueAtTime(0.001,t+0.15); o.stop(t+0.16);
+      });
+      setTimeout(function(){ctx.close();},900);
+    }catch(e){}
+  }
+  function notifyBrowser(title, body){
+    try{
+      if(!("Notification" in window)) return;
+      if(Notification.permission==="granted"){ new Notification(title,{body:body}); }
+    }catch(e){}
+  }
+
+  function allSources(){
+    var base = DEFAULT_SOURCES.concat(S.custom);
+    return base.map(function(s){ return {id:s.id, name:s.name, url:s.url, on:S.enabled[s.id]!==false}; });
+  }
+  function srcName(id){
+    var a=allSources(); for(var i=0;i<a.length;i++) if(a[i].id===id) return a[i].name;
+    return id;
+  }
+  function dateFromUrl(url){
+    var m=String(url).match(/_(\d{4})(\d{2})(\d{2})\b/);
+    if(m) return m[1]+"-"+m[2]+"-"+m[3];
+    return null;
+  }
+  function dateNum(ds){ if(!ds) return 0; return parseInt(ds.replace(/-/g,""),10)||0; }
+  var EXPIRE_DAYS=3; // link spin thường hết hạn sau khoảng 3 ngày
+  function effDate(r){ return r.dateStr || todayStr(new Date(r.firstSeen)); }
+  function isExpired(r){
+    var diff=Math.round((new Date(todayStr())-new Date(effDate(r)))/86400000);
+    return !isNaN(diff) && diff>EXPIRE_DAYS;
+  }
+  function cleanReward(t){
+    t=String(t||"").replace(/&amp;/g,"&").replace(/&#39;|&apos;/g,"'").replace(/&quot;/g,'"').replace(/\s+/g," ").trim().replace(/^[-–—:|•]+\s*/,"").slice(0,80);
+    if(!t) return "Free Spins";
+    var m=t.match(/(\d[\d,.]*)\s*(spin|coin)/i);
+    if(m){ var n=m[1].replace(/,/g,""); var kind=/coin/i.test(m[2])?"Coins":"Spins"; return n+" "+kind; }
+    if(/coin/i.test(t)&&/spin/i.test(t)) return "Spins + Coins";
+    if(/coin/i.test(t)) return "Coins";
+    if(/spin/i.test(t)) return "Free Spins";
+    return t.charAt(0).toUpperCase()+t.slice(1);
+  }
+
+  // ---- Parser: xử lý cả 3 kiểu trình bày của các trang nguồn ----
+  function parseSourceHtml(html, source){
+    var out=[], seenUrl={};
+    function push(url, reward){
+      url=String(url||"").trim().replace(/&amp;/g,"&").replace(/&#39;|&apos;/g,"'").replace(/&quot;/g,'"');
+      if(!/^https?:\/\//i.test(url)) return;
+      if(seenUrl[url]) return; seenUrl[url]=1;
+      if(!/moonactive\.net|rewards\.coinmaster\.com|coinmaster-daily\.com|coin-master\.me|onelink\.me|coinmaster\.com/i.test(url)) return;
+      if(/coinmaster\.com\/?(\?.*)?$|coinmaster\.com\/?$/i.test(url) && url.length<32) return; // bỏ link trang chủ coinmaster.com
+      out.push({url:url, reward:cleanReward(reward)});
+    }
+    // Kiểu 1: <li>25 spins - <a href="URL">collect</a></li> (Pocket Tactics)
+    var re1=/<li[^>]*>\s*([^<>]{1,90}?)\s*-\s*<a[^>]+href="([^"]+)"[^>]*>\s*collect\s*<\/a>/gi, m;
+    while((m=re1.exec(html))){ push(m[2], m[1]); }
+    // Kiểu 2: <li><a href="URL">Free Spins</a> - ... / <a href="URL"><strong>Free Spins</strong></a> (Eurogamer)
+    var re2=/<a[^>]+href="([^"]+)"[^>]*>(?:\s*<strong>)?\s*([^<>]{1,60}?)\s*(?:<\/strong>)?\s*<\/a>/gi;
+    while((m=re2.exec(html))){ if(/spin|coin|collect|claim|free/i.test(m[2])) push(m[1], m[2]); }
+    // Kiểu 3: vét mọi URL thưởng rồi đoán nhãn từ thẻ <li> chứa nó
+    var re3=/(https?:\/\/(?:static\.moonactive\.net\/static\/coinmaster\/reward\/reward2\.html\?c=[A-Za-z0-9_]+|rewards\.coinmaster\.com\/rewards\/rewards\.html\?c=[A-Za-z0-9_]+|coinmaster-daily\.com\/\?gift=\d+|Coin-Master\.me\/[A-Za-z0-9_-]+|coinmaster\.onelink\.me\/[A-Za-z0-9\/\?\=\&\%_-]+))/g, u;
+    while((u=re3.exec(html))){
+      var url=u[1], pos=u.index;
+      var liStart=html.lastIndexOf("<li", pos), liEnd=html.indexOf("</li>", pos);
+      var label="";
+      if(liStart>=0 && liEnd>pos && (liEnd-liStart)<900){
+        var chunk=html.slice(liStart, liEnd).replace(/<[^>]+>/g," ").replace(/\s+/g," ").trim();
+        var lm=chunk.match(/(\d[\d,.]*\s*(?:free\s*)?(?:spin|coin)s?(?:\s*\+\s*\d[\d,.]*\s*(?:coin|spin)s?)?)/i);
+        label = lm?lm[1]:chunk.split("collect")[0].split("claim")[0].slice(0,60);
+      }
+      push(url, label||"Free Spins");
+    }
+    return out;
+  }
+
+  async function fetchText(url){
+    // Trên Perchance dùng superFetch (vượt CORS). Mở file HTML độc lập thì đi qua proxy công khai.
+    if(window.root && root.superFetch){
+      var ctrl0=new AbortController(); var to0=setTimeout(function(){ctrl0.abort();},25000);
+      try{
+        var rr=await root.superFetch(url,{signal:ctrl0.signal, headers:{"Accept":"text/html"}});
+        if(!rr.ok) throw new Error("HTTP "+rr.status);
+        return await rr.text();
+      } finally { clearTimeout(to0); }
+    }
+    // Bản độc lập: thử lần lượt link gốc rồi 3 proxy công khai, mỗi lượt tối đa 10 giây.
+    // (Thử nối tiếp để không bị proxy chặn vì dồn quá nhiều request cùng lúc.)
+    var targets=[url,
+      "https://api.allorigins.win/raw?url="+encodeURIComponent(url),
+      "https://corsproxy.io/?url="+encodeURIComponent(url),
+      "https://proxy.corsfix.com/?"+encodeURIComponent(url),
+      "https://api.codetabs.com/v1/proxy?quest="+encodeURIComponent(url)];
+    var lastErrS=new Error("Không tải được");
+    for(var si=0;si<targets.length;si++){
+      var cc=new AbortController();
+      var tm=setTimeout((function(c){return function(){try{c.abort();}catch(e){}};})(cc),30000);
+      try{
+        var rs=await fetch(targets[si],{signal:cc.signal, headers:{"Accept":"text/html"}});
+        if(!rs.ok) throw new Error("HTTP "+rs.status);
+        var txt=await rs.text();
+        clearTimeout(tm);
+        if(txt && txt.length>2000) return txt;
+        lastErrS=new Error("Nội dung rỗng");
+      }catch(e){ clearTimeout(tm); lastErrS=e; }
+    }
+    throw lastErrS;
+  }
+
+  function upsertLink(url, reward, source){
+    var ds=dateFromUrl(url);
+    var isFirst=!S.seen[url];
+    var rec=S.links.get(url);
+    if(!rec){
+      rec={url:url, reward:reward, dateStr:ds, dateNum:dateNum(ds), sources:{}, firstSeen:Date.now(), isNewSession:isFirst && S.lastScanAt>0};
+      S.links.set(url, rec);
+    } else {
+      if(reward && /spin|coin|\d/i.test(reward) && rec.reward==="Free Spins") rec.reward=reward;
+      if(ds && (!rec.dateStr || rec.dateNum<dateNum(ds))){ rec.dateStr=ds; rec.dateNum=dateNum(ds); }
+    }
+    rec.sources[source.id]=srcName(source.id);
+    if(isFirst){
+      S.seen[url]=Date.now();
+      if(S.lastScanAt>0){ rec.isNewSession=true; S.sessionNew++; }
+    }
+    return isFirst;
+  }
+
+  async function persist(){
+    try{
+      if(window.root && root.kv){
+        await root.kv.cm.set("seen", S.seen);
+        await root.kv.cm.set("claimed", S.claimed);
+        await root.kv.cm.set("settings", {enabled:S.enabled, custom:S.custom, intervalMin:S.intervalMin});
+      }
+    }catch(e){}
+    try{
+      localStorage.setItem("cmss_seen_v1", JSON.stringify(S.seen));
+      localStorage.setItem("cmss_claimed_v1", JSON.stringify(S.claimed));
+    }catch(e){}
+  }
+  async function restore(){
+    var seen=null, claimed=null, settings=null;
+    try{ if(window.root && root.kv){ seen=await root.kv.cm.get("seen"); claimed=await root.kv.cm.get("claimed"); settings=await root.kv.cm.get("settings"); } }catch(e){}
+    if(!seen){ try{ seen=JSON.parse(localStorage.getItem("cmss_seen_v1")||"null"); }catch(e){} }
+    if(!claimed){ try{ claimed=JSON.parse(localStorage.getItem("cmss_claimed_v1")||"null"); }catch(e){} }
+    if(seen) S.seen=seen; if(claimed) S.claimed=claimed;
+    if(settings){ if(settings.enabled) S.enabled=settings.enabled; if(settings.custom) S.custom=settings.custom; if(settings.intervalMin) S.intervalMin=settings.intervalMin; }
+    DEFAULT_SOURCES.forEach(function(s){ if(S.enabled[s.id]===undefined) S.enabled[s.id]=true; });
+  }
+
+  function setStatus(html){ $("statusLine").innerHTML=html; }
+  function setProg(p){ $("progBar").style.width=Math.round(p*100)+"%"; }
+
+  async function scanAll(reason){
+    if(S.scanning) return;
+    S.scanning=true;
+    var btn=$("scanBtn"); btn.disabled=true; btn.textContent="Đang quét...";
+    setProg(0.04);
+    var srcs=allSources().filter(function(s){return s.on;});
+    if(!srcs.length){ log("Chưa bật nguồn nào. Hãy bật ít nhất 1 nguồn.", "err"); toast("Hãy bật ít nhất 1 nguồn quét."); }
+    log("Bắt đầu quét ("+(reason==="auto"?"tự động":"thủ công")+") "+srcs.length+" nguồn...", "inf");
+    setStatus("Đang quét <b>"+srcs.length+" nguồn</b>... Vui lòng chờ.");
+    var totalNew=0, totalLinks=0, okCount=0, completed=0;
+    setStatus("Đang quét song song <b>"+srcs.length+" nguồn</b>... Vui lòng chờ.");
+    async function scanOne(sc){
+      S.perSource[sc.id]={state:"run", n:0};
+      renderSources();
+      try{
+        var html=await fetchText(sc.url);
+        var found=parseSourceHtml(html, sc);
+        var fresh=0;
+        found.forEach(function(f){ if(upsertLink(f.url, f.reward, sc)) fresh++; });
+        S.perSource[sc.id]={state:"ok", n:found.length, fresh:fresh};
+        log(sc.name+": "+found.length+" link ("+fresh+" mới).", fresh>0?"ok":"inf");
+        return {ok:true, n:found.length, fresh:fresh};
+      }catch(e){
+        S.perSource[sc.id]={state:"err", n:0, err:String(e&&e.message||e).slice(0,120)};
+        log(sc.name+" lỗi: "+(e&&e.message||e), "err");
+        return {ok:false, n:0, fresh:0};
+      }finally{
+        completed++;
+        setProg(completed/Math.max(1,srcs.length));
+        renderSources(); renderAll(); persist();
+      }
+    }
+    var results=await Promise.all(srcs.map(function(sc, idx){
+      return (async function(){
+        if(idx>0) await new Promise(function(r){ setTimeout(r, idx*600); });
+        return scanOne(sc);
+      })();
+    }));
+    results.forEach(function(r){ totalNew+=r.fresh; totalLinks+=r.n; if(r.ok) okCount++; });
+    var isFirstScan = !S.lastScanAt;
+    S.lastScanAt=Date.now();
+    S.countdown=S.intervalMin*60;
+    if(totalNew>0 && !isFirstScan){
+      var msg="Phát hiện "+totalNew+" link mới!";
+      toast(msg+" Bấm Nhận spin để lấy thưởng.");
+      log(msg, "ok");
+      if($("soundChk").checked) beep();
+      notifyBrowser("LTNSCANNER", msg);
+    } else if(isFirstScan && S.links.size>0){
+      log("Tải xong "+S.links.size+" link từ "+okCount+"/"+srcs.length+" nguồn. Bật tự động quét để bắt link mới.", "ok");
+    } else {
+      log("Quét xong "+okCount+"/"+srcs.length+" nguồn, không có link mới. Tổng "+S.links.size+" link đã biết.", "inf");
+    }
+    if(S.links.size===0){
+      log("Tất cả nguồn đều lỗi hoặc trống. Đã giữ dữ liệu mẫu để bạn vẫn có link dùng tạm.", "err");
+      seedIfEmpty();
+    }
+    setStatus("Quét xong lúc <b>"+fmtTime(Date.now())+"</b>: "+okCount+"/"+srcs.length+" nguồn OK, <b>"+totalNew+" link mới</b>. "+(S.auto?("Tự quét lại sau <b>"+fmtCountdown(S.countdown)+"</b>."):"Bật tự động quét để theo dõi liên tục."));
+    setProg(1); setTimeout(function(){setProg(0);},1200);
+    btn.disabled=false; btn.textContent="Quét ngay";
+    S.scanning=false;
+    renderAll(); persist();
+  }
+
+  function seedIfEmpty(){
+    if(S.links.size>0) return;
+    SEED.forEach(function(s){
+      var ds=dateFromUrl(s.url);
+      S.links.set(s.url,{url:s.url, reward:s.reward, dateStr:ds, dateNum:dateNum(ds), sources:{}, firstSeen:Date.now(), isNewSession:false});
+      S.seen[s.url]=S.seen[s.url]||Date.now();
+    });
+  }
+
+  // ---- Lọc + hiển thị ----
+  function filteredLinks(){
+    var q=$("qInput").value.trim().toLowerCase();
+    var df=$("dateFilter").value, sf=$("srcFilter").value;
+    var hideC=$("hideClaimedChk").checked, sort=$("sortSel").value;
+    var hideExp=$("hideExpiredChk")?$("hideExpiredChk").checked:true;
+    var nowT=todayStr();
+    var arr=Array.from(S.links.values());
+    arr=arr.filter(function(r){
+      if(hideC && S.claimed[r.url]) return false;
+      if(hideExp && isExpired(r)) return false;
+      if(sf!=="all" && !r.sources[sf]) return false;
+      if(q){
+        var hay=(r.reward+" "+r.url+" "+Object.keys(r.sources).map(srcName).join(" ")).toLowerCase();
+        if(hay.indexOf(q)<0) return false;
+      }
+      if(df!=="all"){
+        var ed=effDate(r);
+        var diff=Math.round((new Date(nowT)-new Date(ed))/86400000);
+        if(df==="today" && ed!==nowT) return false;
+        if((df==="3"||df==="7") && (isNaN(diff)||diff<0||diff>parseInt(df,10))) return false;
+      }
+      return true;
+    });
+    arr.sort(function(a,b){
+      var d=(b.dateNum||0)-(a.dateNum||0);
+      if(d!==0) return sort==="new"?d:-d;
+      var f=b.firstSeen-a.firstSeen; return sort==="new"?f:-f;
+    });
+    return arr;
+  }
+
+  function renderAll(){ renderStats(); renderList(); updateAutoUI(); }
+
+  function renderStats(){
+    var nowT=todayStr(), t=0, c=0;
+    S.links.forEach(function(r){
+      var ed=r.dateStr||todayStr(new Date(r.firstSeen));
+      if(ed===nowT) t++;
+      if(S.claimed[r.url]) c++;
+    });
+    $("stTotal").textContent=S.links.size;
+    $("stToday").textContent=t;
+    $("stNew").textContent=S.sessionNew;
+    $("stClaimed").textContent=c;
+  }
+
+  function renderList(){
+    var arr=filteredLinks();
+    var grid=$("listGrid");
+    grid.innerHTML="";
+    $("emptyBox").hidden=arr.length>0;
+    var nowT=todayStr();
+    arr.slice(0,120).forEach(function(r){
+      var ed=r.dateStr||todayStr(new Date(r.firstSeen));
+      var isNew=!!r.isNewSession, isToday=ed===nowT, claimed=!!S.claimed[r.url];
+      var card=document.createElement("div");
+      card.className="card"+(isNew?" isnew":"")+(claimed?" claimed":"");
+      var exp=isExpired(r);
+      var top=document.createElement("div"); top.className="top";
+      var tag=document.createElement("span");
+      tag.className="tag "+(exp?"exp":(isNew?"new":(isToday?"today":"old")));
+      tag.textContent=exp?"HẾT HẠN":(isNew?"MỚI":(isToday?"HÔM NAY":ed));
+      top.appendChild(tag);
+      var rw=document.createElement("div"); rw.className="reward"; rw.textContent=r.reward+" ";
+      var sm=document.createElement("small"); sm.textContent="· "+ed; rw.appendChild(sm);
+      var row=document.createElement("div"); row.className="row";
+      var b1=document.createElement("button"); b1.textContent=claimed?"Đã nhận — nhận lại":"Nhận spin";
+      if(exp){ b1.disabled=true; b1.textContent="Hết hạn"; }
+      else b1.onclick=function(){ claim(r.url,false); window.open(r.url,"_blank","noopener"); };
+      row.appendChild(b1);
+      var meta=document.createElement("div"); meta.className="meta";
+      var m1=document.createElement("span"); m1.textContent="Phát hiện: "+fmtTime(r.firstSeen);
+      var m2=document.createElement("span"); m2.textContent=claimed?"Đã nhận":"Chưa nhận";
+      meta.appendChild(m1); meta.appendChild(m2);
+      card.appendChild(top); card.appendChild(rw); card.appendChild(row); card.appendChild(meta);
+      grid.appendChild(card);
+    });
+    if(arr.length>120){
+      var more=document.createElement("div"); more.className="empty";
+      more.textContent="Còn "+(arr.length-120)+" link nữa, hãy thu hẹp bộ lọc để xem.";
+      grid.appendChild(more);
+    }
+  }
+
+  function renderSources(){
+    var box=$("srcList"); box.innerHTML="";
+    allSources().forEach(function(s){
+      var row=document.createElement("div"); row.className="srcrow";
+      var chk=document.createElement("input"); chk.type="checkbox"; chk.checked=s.on;
+      chk.onchange=function(){ S.enabled[s.id]=chk.checked; persist(); renderStats(); updateAutoUI(); };
+      var nm=document.createElement("span"); nm.className="nm"; nm.textContent=s.name;
+      var u=document.createElement("span"); u.className="u"; u.textContent=s.url;
+      var st=document.createElement("span"); st.className="st";
+      var ps=S.perSource[s.id];
+      if(ps&&ps.state==="run") st.textContent="đang quét...";
+      else if(ps&&ps.state==="ok") st.textContent=ps.n+" link"+(ps.fresh?(" · "+ps.fresh+" mới"):"");
+      else if(ps&&ps.state==="err") st.textContent="lỗi: "+(ps.err||"không tải được");
+      else st.textContent="chưa quét";
+      var open=document.createElement("a"); open.href=s.url; open.target="_blank"; open.rel="noopener"; open.textContent="mở gốc"; open.style.color="#9aa5ff";
+      row.appendChild(chk); row.appendChild(nm); row.appendChild(u); row.appendChild(st); row.appendChild(open);
+      if(s.custom){
+        var del=document.createElement("button"); del.className="danger small"; del.textContent="Xóa";
+        del.onclick=function(){ S.custom=S.custom.filter(function(x){return x.id!==s.id;}); delete S.enabled[s.id]; persist(); renderSources(); buildSrcFilter(); };
+        row.appendChild(del);
+      }
+      box.appendChild(row);
+    });
+  }
+
+  function buildSrcFilter(){
+    var sel=$("srcFilter"); var cur=sel.value||"all";
+    sel.innerHTML='<option value="all">Mọi nguồn</option>';
+    allSources().forEach(function(s){
+      var o=document.createElement("option"); o.value=s.id; o.textContent=s.name; sel.appendChild(o);
+    });
+    sel.value=cur;
+  }
+
+  function claim(url, unclaim){
+    if(unclaim){ delete S.claimed[url]; var r=S.links.get(url); }
+    else { S.claimed[url]=Date.now(); }
+    persist(); renderAll();
+  }
+  function updateAutoUI(){
+    $("autoBtn").textContent=S.auto?"Tắt tự động quét":"Bật tự động quét";
+    $("autoPill").textContent="Tự động quét: "+(S.auto?("BẬT · mỗi "+S.intervalMin+" phút · còn "+fmtCountdown(S.countdown)):"TẮT");
+  }
+
+  // ---- Sự kiện ----
+  $("scanBtn").onclick=function(){ S.lastScanAt=S.lastScanAt||0; scanAll("manual"); };
+  $("autoBtn").onclick=function(){
+    S.auto=!S.auto;
+    if(S.auto){ S.countdown=S.intervalMin*60; log("Đã bật tự động quét mỗi "+S.intervalMin+" phút. Hãy treo tab này.", "ok"); toast("Đã bật tự động quét mỗi "+S.intervalMin+" phút."); }
+    else log("Đã tắt tự động quét.", "inf");
+    updateAutoUI();
+  };
+  $("intervalSel").onchange=function(){ S.intervalMin=parseInt($("intervalSel").value,10)||5; S.countdown=S.intervalMin*60; persist(); updateAutoUI(); };
+  $("notiBtn").onclick=function(){
+    if(!("Notification" in window)){ toast("Trình duyệt này không hỗ trợ thông báo."); return; }
+    Notification.requestPermission().then(function(p){ toast(p==="granted"?"Đã bật thông báo trình duyệt.":"Chưa cấp quyền thông báo."); });
+  };
+  ["qInput","dateFilter","srcFilter","sortSel","hideClaimedChk","hideExpiredChk"].forEach(function(id){
+    $(id).addEventListener("input", renderList); $(id).addEventListener("change", renderList);
+  });
+  $("openAllBtn").onclick=function(){
+    var arr=filteredLinks().filter(function(r){return !S.claimed[r.url];}).slice(0,12);
+    if(!arr.length){ toast("Không có link chưa nhận nào trong bộ lọc hiện tại."); return; }
+    if(!confirm("Mở "+arr.length+" link trong tab mới? Mỗi link cần mở bằng thiết bị có cài Coin Master.")) return;
+    arr.forEach(function(r,i){ setTimeout(function(){ window.open(r.url,"_blank","noopener"); claim(r.url,false); }, i*600); });
+  };
+  $("markAllBtn").onclick=function(){ filteredLinks().forEach(function(r){ S.claimed[r.url]=Date.now(); }); persist(); renderAll(); toast("Đã đánh dấu đã nhận cho các link đang hiện."); };
+  $("clearClaimedBtn").onclick=function(){ S.claimed={}; persist(); renderAll(); toast("Đã bỏ đánh dấu tất cả."); };
+  $("addSrcBtn").onclick=function(){
+    var u=$("customUrlInput").value.trim();
+    if(!/^https?:\/\/.+\..+/.test(u)){ toast("URL chưa hợp lệ."); return; }
+    var id="custom-"+Date.now();
+    try{ var nm=new URL(u).hostname.replace(/^www\./,""); S.custom.push({id:id, name:nm, url:u, custom:true}); }
+    catch(e){ S.custom.push({id:id, name:"Nguồn mới", url:u, custom:true}); }
+    S.enabled[id]=true; $("customUrlInput").value="";
+    persist(); renderSources(); buildSrcFilter(); renderStats();
+    log("Đã thêm nguồn mới. Bấm Quét ngay để thử.", "ok");
+  };
+
+  // Đồng hồ + đếm ngược
+  setInterval(function(){
+    var d=new Date(), p=function(n){return ("0"+n).slice(-2);};
+    $("liveClock").textContent=p(d.getHours())+":"+p(d.getMinutes())+":"+p(d.getSeconds());
+    if(S.auto && !S.scanning){
+      S.countdown--;
+      if(S.countdown<=0){ scanAll("auto"); }
+      else updateAutoUI();
+    }
+  },1000);
+
+  // Khởi động
+  (async function boot(){
+    $("intervalSel").value="5";
+    renderSources(); buildSrcFilter();
+    await restore();
+    $("intervalSel").value=String(S.intervalMin||5);
+    seedIfEmpty();
+    renderSources(); buildSrcFilter(); renderAll();
+    log("Chào bạn! Trang đã sẵn sàng với "+S.links.size+" link khởi đầu.", "inf");
+    log("Bấm Quét ngay để lấy link mới nhất từ "+allSources().filter(function(s){return s.on;}).length+" nguồn.", "inf");
+    try{ await scanAll("manual"); }catch(e){ log("Quét khởi động lỗi: "+(e&&e.message||e), "err"); }
+  })();
+})();
+</script>
+
+</body>
+</html>
